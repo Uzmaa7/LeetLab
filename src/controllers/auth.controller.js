@@ -10,6 +10,25 @@ dotenv.config({
     path: "./.env"
 })
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById({userId});
+
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({validateBeforeSave: false});
+
+        return {accessToken, refreshToken};
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Something went wrong while generation ACCESS and REFRESH tokens"
+        })
+    }
+}
+
 const registerUser = async (req, res) => {
 
     const {username, fullname, email, password} = req.body;
@@ -79,4 +98,61 @@ const registerUser = async (req, res) => {
     }
 }
 
-export {registerUser};
+
+const loginUser = async (req, res) => {
+
+    const {email , password} = req.body;
+
+    try {
+        //Does user exist??
+        const user = await User.findOne({email});
+        if(!user){
+            return res.status(401).json({
+                message: "User not found"
+            })
+        }
+
+        //Password is correct??
+        const isPasswordMatched = await bcrypt.compare(password, user.password);
+        if(!isPasswordMatched){
+            return res.status(401).json({
+                message: "Invalid user credentials"
+            })
+        }
+
+        //generate access and refresh tokens
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+        //send these tokens to cookies
+        const options = {
+            httpOnly: true,//only server can modify now not frontend
+            secure: true,
+        }
+
+        return res
+        .status(200)
+        .cookie("accessToken",accessToken, options)
+        .cookie("refreshToken",refreshToken, options)
+        .json({
+            message: "User logged In successfully",
+            user: {
+                loggedInUser,
+                accessToken,
+            }
+        })
+        
+    } catch (error) {
+        console.log("Error login user", error);
+        res.status(500).json({
+            message: "Error login user"
+        })
+    }
+}
+
+const logoutUser = async (req, res) => {
+    const user = req.body
+}
+
+export {registerUser, loginUser};

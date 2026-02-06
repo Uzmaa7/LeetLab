@@ -73,6 +73,21 @@ const userSchema = new mongoose.Schema({
 
 }, {timestamps:true});
 
+
+
+// =============userSchema.methods===========================//
+userSchema.methods.generateAccessToken = async () => {
+
+}
+userSchema.methods.generateRefreshToken = async () => {
+
+}
+
+
+
+
+
+
 const User = mongoose.model("User", userSchema);
 
 export default User;
