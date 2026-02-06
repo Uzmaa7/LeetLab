@@ -76,6 +76,13 @@ const userSchema = new mongoose.Schema({
     refreshToken: {
         type: String,
     },
+    //all the problems created by admin
+    problems: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Problem"
+    }],
+
+
 
 }, {timestamps:true});
 
