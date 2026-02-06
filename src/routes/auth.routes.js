@@ -1,5 +1,5 @@
 import express from "express";
-import { loginUser, registerUser, logoutUser } from "../controllers/auth.controller.js";
+import { loginUser, registerUser, logoutUser, refreshAccessToken } from "../controllers/auth.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 
@@ -11,9 +11,10 @@ authRouter.post("/register", registerUser);
 
 authRouter.post("/login", loginUser);
 
+
 // ======Secured routes=====================//
 authRouter.post("/logout", verifyJWT, logoutUser);
-
+authRouter.post("/refresh-token", refreshAccessToken);
 // authRouter.get("/check");
 
 
