@@ -155,4 +155,4 @@ const logoutUser = async (req, res) => {
     const user = req.body
 }
 
-export {registerUser, loginUser};
+export {registerUser, loginUser, logoutUser};

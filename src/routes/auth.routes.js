@@ -1,5 +1,6 @@
 import express from "express";
-import { registerUser } from "../controllers/auth.controller.js";
+import { loginUser, registerUser, logoutUser } from "../controllers/auth.controller.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 
 
@@ -8,9 +9,10 @@ const authRouter = express.Router();
 
 authRouter.post("/register", registerUser);
 
-// authRouter.post("/login");
+authRouter.post("/login", loginUser);
 
-// authRouter.post("/logout");
+// ======Secured routes=====================//
+authRouter.post("/logout", verifyJWT, logoutUser);
 
 // authRouter.get("/check");
 
