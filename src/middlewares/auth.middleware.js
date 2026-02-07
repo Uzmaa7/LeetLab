@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import dotenv from "dotenv";
+import { UserRolesEnum } from "../utils/constants.js";
 
 dotenv.config({
     path: "./.env"
@@ -40,4 +41,25 @@ export const verifyJWT = async (req, res, next) => {
     }
 
     
+}
+
+export const checkAdmin = async (req, res, next)=> {
+    try {
+        const userId = req.user._id;
+        //req.user might contain outdated session data, 
+        //whereas a database lookup ensures you are verifying the user's "real-time" status
+        // and permissions.
+        const user = await User.findById(userId);
+        if(!user || user.role !== UserRolesEnum.ADMIN){
+            return res.status(403).json({
+                message: "Access denied - Admin only"
+            })
+        }
+        next();
+    } catch (error) {
+        console.log("error checking admin role", error);
+        res.status(500).json({
+            message: "error checking admin role"
+        })
+    }
 }
