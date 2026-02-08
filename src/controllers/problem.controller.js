@@ -191,4 +191,8 @@ const deleteProblem = async (req, res) => {
     }
 }
 
-export {createProblem, getAllProblems, getProblemById, updateProblem, deleteProblem};
+const getAllProblemsSolvedByUser = async (req, res) => {
+
+}
+
+export {createProblem, getAllProblems, getProblemById, updateProblem, deleteProblem, getAllProblemsSolvedByUser};

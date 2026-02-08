@@ -15,4 +15,16 @@ export const AvailableProblemDifficultyLevel = Object.values(ProblemDifficultyLe
 
 
 
+export const SubmissionStatus = {
+    ACCEPTED:"Accepted",
+    WRONG_ANSWER:"Wrong Answer",
+    TIME_LIMIT_EXCEEDED: "Time Limit Exceeded",
+    COMPILATION_ERROR: "Compilation Error",
+    RUNTIME_ERROR: "Runtime Error (SIGSEGV)",
+    INTERNAL_ERROR: "Internal Error",
+    PROCESSING: "Processing",
+}
+export const AvailableSubmissionStatus = Object.values(SubmissionStatus);
+
+
 export const DB_NAME = "LeetLab";
