@@ -82,6 +82,13 @@ const userSchema = new mongoose.Schema({
         ref: "Problem"
     }],
 
+    submission: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Submission"
+        }
+    ]
+
 
 
 }, {timestamps:true});

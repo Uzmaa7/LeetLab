@@ -14,9 +14,9 @@ const submissionSchema = new mongoose.Schema({
         required: true,
     },
 
-    sourceCode: {
+    // sourceCode: {
 
-    },
+    // },
 
     language : {
         type : String,
@@ -41,8 +41,8 @@ const submissionSchema = new mongoose.Schema({
 
     status: {
         type : String,
-        enum: SubmissionStatus,
-        default: AvailableSubmissionStatus.PROCESSING,
+        enum: AvailableSubmissionStatus,
+        default: SubmissionStatus.PROCESSING,
     },
 
     memory: {
