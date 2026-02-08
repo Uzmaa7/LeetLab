@@ -4,6 +4,8 @@ import { getLanguageIdFromJudgeO, submitBatch, pollBatchResults } from "../utils
 import Problem from "../models/problem.model.js";
 import axios from "axios";
 
+
+
 const createProblem = async(req, res) => {
     //get data
     const {title,description, difficulty, tags,constraints ,hints,
@@ -156,10 +158,37 @@ const getProblemById = async (req,res) => {
     } catch (error) {
         console.log("getProblemById Error -> ", error);
         return res.status(500).json({
-            message: "Error while fetching a Problem",
+            message: "Error while fetching a Problem by ID",
         })
     }
 }
 
 
-export {createProblem, getAllProblems, getProblemById};
+const updateProblem = async (req, res) => {
+
+}
+
+const deleteProblem = async (req, res) => {
+    const {id} = req.params;
+
+    try {
+            const problem = await Problem.findByIdAndDelete(id);
+            if(!problem){
+                return res.status(404).json({
+                    message: "problem not found for deletion"
+                })
+            }
+        
+            return res.status(200).json({
+                success: true,
+                message: "Problem deleted successfully"
+            })
+    } catch (error) {
+        console.log("deleteProblem Error -> ", error);
+        return res.status(500).json({
+            message: "Error while deleting a Problem by ID",
+        })
+    }
+}
+
+export {createProblem, getAllProblems, getProblemById, updateProblem, deleteProblem};
