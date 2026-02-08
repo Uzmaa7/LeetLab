@@ -137,7 +137,29 @@ const getAllProblems = async (req, res) => {
     }
 }
 
+const getProblemById = async (req,res) => {
+    const {id}  = req.params;
+    
+    try {
+        const problem = await Problem.findById(id);
+        if(!problem){
+            return res.status(404).json({
+                message: "Problem not found"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Problem fetched successfully",
+            problem,
+        })
+    } catch (error) {
+        console.log("getProblemById Error -> ", error);
+        return res.status(500).json({
+            message: "Error while fetching a Problem",
+        })
+    }
+}
 
 
-
-export {createProblem, getAllProblems};
+export {createProblem, getAllProblems, getProblemById};
