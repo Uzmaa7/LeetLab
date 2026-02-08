@@ -53,7 +53,12 @@ const submissionSchema = new mongoose.Schema({
 
     time: {
         type: String,
-    }
+    },
+
+    testCases : [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TestcaseResult"
+    }]
 
 }, {timestamps: true});
 

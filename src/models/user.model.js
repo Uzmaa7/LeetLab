@@ -89,7 +89,7 @@ const userSchema = new mongoose.Schema({
         }
     ],
 
-    problemSolved: [{
+    solvedProblems: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "ProblemSolved"
     }]

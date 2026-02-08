@@ -13,9 +13,10 @@ const problemSolvedSchema = new mongoose.Schema({
         ref :"Problem"
     },
 
-
-
-
+    isSolved: {
+        type: Boolean,
+        default : false
+    }
 
 }, {timestamps: true});
 

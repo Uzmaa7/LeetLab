@@ -63,6 +63,10 @@ const problemSchema = new mongoose.Schema({
         required: true,
     },
 
+    solvedBy: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "ProblemSolved"
+    }]
 
 
 }, {timestamps:true});
