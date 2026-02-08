@@ -113,4 +113,31 @@ const createProblem = async(req, res) => {
     
 }
 
-export {createProblem};
+const getAllProblems = async (req, res) => {
+    try {
+        //get all the problems
+        const problems = await Problem.find();
+
+        if(!problems){
+            return res.status(404).json({
+                message: "No problems found !"
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "All the Problems fetched successfully",
+            problems,
+        })
+    } catch (error) {
+        console.log("getAllproblem Error -> ", error);
+        return res.status(500).json({
+            message: "Error while fetching Problems",
+        })
+    }
+}
+
+
+
+
+export {createProblem, getAllProblems};
