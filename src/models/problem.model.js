@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { AvailableProblemDifficultyLevel, ProblemDifficultyLevel } from "../utils/constants.js";
 
 
-const problemSchema = new mongoose.Schema9({
+const problemSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
@@ -26,7 +26,6 @@ const problemSchema = new mongoose.Schema9({
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true
     },
 
     examples: [{
@@ -53,18 +52,16 @@ const problemSchema = new mongoose.Schema9({
         output: String,
     }],
 
-    codeSnippets: [{
-        languages: String,
-        code: String,
-    }],
+    codeSnippets: {
+        type: Map,
+        of: String,
+    },
 
-    referenceSolution: [
-        {
-        language: String,
-        code: String,
-        isOptimal: Boolean // Optional: to mark the best time-complexity solution
-        }
-    ],
+    referenceSolution: {
+        type: Map,
+        of: String,
+        required: true,
+    },
 
 
 
