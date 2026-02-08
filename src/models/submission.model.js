@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { AvailableSubmissionStatus, SubmissionStatus } from "../utils/constants.js";
+import User from "./user.model.js"
+import Problem from "./problem.model.js"
 
 const submissionSchema = new mongoose.Schema({
     submitBy: {
