@@ -13,9 +13,15 @@ const problemSolvedSchema = new mongoose.Schema({
         ref :"Problem"
     },
 
-    
+
+
+
 
 }, {timestamps: true});
+
+
+problemSolvedSchema.index({ solvedBy: 1, problem: 1 }, { unique: true });
+
 
 const ProblemSolved = mongoose.model("ProblemSolved",problemSolvedSchema);
 
