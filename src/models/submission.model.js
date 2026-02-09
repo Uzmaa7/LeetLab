@@ -16,9 +16,9 @@ const submissionSchema = new mongoose.Schema({
         required: true,
     },
 
-    // sourceCode: {
-
-    // },
+    sourceCode: {
+        type: String,
+    },
 
     language : {
         type : String,
