@@ -38,11 +38,48 @@ const executeCode = async (req, res) => {
         console.log('Result------------------');
         console.log(results);
 
+        // 6. analyse the result of all the test cases :
+        let allTestCasePassed = true;
+        const detailedResults = results.map( (result , i) => {
+            const stdout = result.stdout?.trim();
+            const expected_output = expected_outputs[i]?.trim();
+            const passed = stdout === expected_output;
+
+            // console.log(`Testcase #${i+1}`);
+            // console.log(` Given Input ${stdin[i]}`);
+            // console.log(`Expected Output for the testcase is : ${expected_output}`);
+            // console.log(`Output from judge0 ${stdout}`);
+
+            // console.log(`Matched : ${passed}`);
+            // console.log("======================================");
+
+            if(!passed){
+                allTestCasePassed = false;
+            }
+
+            return {
+                testCase: i+1,
+                passed,
+                stdout,
+                expectedOutput: expected_output,
+                stderr:result.stderr || null ,
+                compileOutput: result.compile_output || null,
+                status: result.status.description,
+                memory: result.memory ? `${result.memory} KB` : undefined,
+                time: result.time ? `${result.time} s` : undefined,
+            }
+
+            
+        })
+        console.log(detailedResults);
+
+
         res.status(200).json({
             message: "code executed"
         })
+
     } catch (error) {
-        console.log("!", error);
+        // console.log("!", error);
     }
 }
 
