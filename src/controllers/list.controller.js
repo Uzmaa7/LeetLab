@@ -155,8 +155,32 @@ const deleteList = async (req, res) => {
         });
     }
 }
-
+///////////////-----UPDATE-----------------////////////////////////
 const removeProblemFromList = async (req, res) => {
+    const {listId} = req.params;
+    const {problemIds} = req.body;
+    try {
+        if(!Array.isArray(problemIds) || problemIds.length === 0){
+            return res.status(400).json({
+                error:"Invalidor missing problem id"
+            })
+        }
 
+        const deleteProblem = await ProblemsInList.deleteMany({listId, problem: {$in : problemIds}});
+
+        await List.findByIdAndUpdate(listId, {
+            $pull: { 
+                problemsInList: {
+                    $in: junctionIds
+                } 
+            }
+        });
+    } catch (error) {
+        console.error("removeProblemFromList:", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to remove Problem From List" 
+        });
+    }
 }
 export {createList, getAllLists, getAList, addProblemInList, deleteList, removeProblemFromList};
