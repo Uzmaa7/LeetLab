@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createList, getAllLists, getAList } from "../controllers/list.controller.js";
+import { createList, getAllLists, getAList, addProblemInList } from "../controllers/list.controller.js";
 
 const listRouter = express.Router();
 

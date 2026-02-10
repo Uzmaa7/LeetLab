@@ -1,4 +1,5 @@
 import List from "../models/list.model";
+import ProblemsInList from "../models/problemsInList.model";
 
 const createList = async (req, res) => {
     try {
@@ -79,4 +80,45 @@ const getAList = async (req, res) => {
         });
     }
 }
-export {createList, getAllLists, getAList};
+
+const addProblemInList = async (req, res)=> {
+    const {listId} = req.params;//list in which user wants to add the problems
+    const {problemIds} = req.body;// [id1, id2] -> all the problems user wants to add in list
+    
+    try {
+        if(!Array.isArray(problemIds) || problemIds.length === 0){
+            res.status(400).json({ 
+                message: "Invalid or missing problemId" 
+            });
+        }   
+        // 2. prepare the data to insert in problemInListSchema
+        const dataToInsert = problemIds.map((problemId) => ({
+            list: listId,
+            problem: problemId,
+        }));
+
+        // 3. we got the documents of problemInListSchema
+        const ProblemsInListDocs = await ProblemsInList.insertMany(dataToInsert, { ordered: false });
+
+        // 4. get these document ids
+        const insertIds = ProblemsInListDocs.map(doc => doc._id);
+
+        // 5.insert these ids into listSchema -> problemInList field = [doc_id1, doc_id2];
+        await List.findByIdAndUpdate(listId, {
+            $push: {problemsInList: {$each: insertIds}}
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Problems added to playlist successfully",
+        });
+        
+    } catch (error) {
+        console.error("addProblemInList Error:", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to add problems to playlist" 
+        });
+    }
+}
+export {createList, getAllLists, getAList, addProblemInList};
