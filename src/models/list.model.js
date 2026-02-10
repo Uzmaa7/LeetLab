@@ -19,14 +19,14 @@ const listSchema = new mongoose.Schema({
 
     problemsInList: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "ProblemsInPlaylist"
+        ref: "ProblemsInList"
     }],
 
 
 
 }, {timestamps:true});
 
-listSchema.index({ title: 1, createdBy: 1 }, { unique: true });
+listSchema.index({ createdBy: 1, title: 1 }, { unique: true });
 
 const List = mongoose.model("List", listSchema);
 
