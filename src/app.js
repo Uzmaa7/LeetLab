@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.routes.js";
 import problemRouter from "./routes/problem.routes.js";
 import executionRouter from "./routes/executeCode.routes.js";
-
+import submissionRouter from "./routes/submission.routes.js";
 
 dotenv.config({
     path: "./.env"
@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/problems", problemRouter);
 app.use("/api/v1/execute-code", executionRouter);
-
+app.use("/api/v1/submission", submissionRouter);
 
 
 

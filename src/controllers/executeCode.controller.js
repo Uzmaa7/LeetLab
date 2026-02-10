@@ -123,17 +123,17 @@ const executeCode = async (req, res) => {
 
         }))
 
-        console.log("1" , testCaseResults)
+        // console.log("1" , testCaseResults)
 
         const savedTestCases = await TestcaseResult.insertMany(testCaseResults);
-        console.log("2",savedTestCases);
+        // console.log("2",savedTestCases);
 
         //Linking (Submission ke andar Test Cases ki IDs daalna)
         submission.testCases = savedTestCases.map(tc => tc._id);
         await submission.save();
 
         const finalSubmission = await Submission.findById(submission._id).populate("testCases");
-        console.log("3", finalSubmission);
+        // console.log("3", finalSubmission);
 
         res.status(200).json({
             success: true,
