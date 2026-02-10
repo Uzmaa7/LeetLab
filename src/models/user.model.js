@@ -92,6 +92,11 @@ const userSchema = new mongoose.Schema({
     solvedProblems: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "ProblemSolved"
+    }],
+
+    lists: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "List"
     }]
 
 
