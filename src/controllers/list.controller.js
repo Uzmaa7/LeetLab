@@ -1,5 +1,8 @@
-import List from "../models/list.model";
-import ProblemsInList from "../models/problemsInList.model";
+import List from "../models/list.model.js";
+import ProblemsInList from "../models/problemsInList.model.js";
+
+
+
 
 const createList = async (req, res) => {
     try {
@@ -121,4 +124,39 @@ const addProblemInList = async (req, res)=> {
         });
     }
 }
-export {createList, getAllLists, getAList, addProblemInList};
+
+const deleteList = async (req, res) => {
+    const {listId} = req.params;
+    const userId = req.user._id;
+    try {
+        // 1. Pehle check karo ki kya ye list usi user ki hai? (Security)
+        const list = await List.findOne({ _id: listId, createdBy: userId });
+        if (!list) {
+            return res.status(404).json({
+                success: false,
+                message: "Playlist not found or you don't have permission to delete it"
+            });
+        }
+        // 2.
+        await ProblemsInList.deleteMany({ list: listId });
+        
+        // 3.
+        const deletedList = await List.findByIdAndDelete(listId);
+
+        res.status(200).json({
+            success: true,
+            message: "Playlist and its associated problems deleted successfully"
+        });
+    } catch (error) {
+        console.error("deleteList Error:", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to delete playlist" 
+        });
+    }
+}
+
+const removeProblemFromList = async (req, res) => {
+
+}
+export {createList, getAllLists, getAList, addProblemInList, deleteList, removeProblemFromList};
