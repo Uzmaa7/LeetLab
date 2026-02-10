@@ -22,3 +22,29 @@ const createList = async (req, res) => {
     }
 }
 
+const getAllLists = async(req, res) => {
+    try {
+        const userId = req.user._id;
+        const allLists = await List.find({ createdBy: userId })
+        .populate({ 
+            path: 'problemsInList', 
+            populate: {
+                path: 'problem' 
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "All Lists fetched successfully",
+            allLists
+        });
+
+    } catch (error) {
+        console.error("getAllLists", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch All Lists" 
+        });
+    }
+}
+export {createList, getAllLists};
