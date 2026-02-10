@@ -14,7 +14,6 @@ const problemsInListSchema = new mongoose.Schema({
 }, {timestamps: true});
 
 problemsInListSchema.index({ list: 1, problem: 1 }, { unique: true });
-
 const ProblemsInList = mongoose.model("ProblemsInList",problemsInListSchema);
 
 export default ProblemsInList;
