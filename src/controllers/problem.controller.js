@@ -3,6 +3,7 @@ import { UserRolesEnum } from "../utils/constants.js";
 import { getLanguageIdFromJudgeO, submitBatch, pollBatchResults } from "../utils/judgeO.js";
 import Problem from "../models/problem.model.js";
 import axios from "axios";
+import ProblemSolved from "../models/problemSolved.model.js";
 
 
 
@@ -192,7 +193,20 @@ const deleteProblem = async (req, res) => {
 }
 
 const getAllProblemsSolvedByUser = async (req, res) => {
-
+    try {
+        const userId = req.user._id;
+        const problems = await ProblemSolved.find({solvedBy: userId}).populate("problem");
+        return res.status(200).json({
+            success: true,
+            message: "All Problems solved by User Fetched Successfully",
+            problems,
+        })
+    } catch (error) {
+        console.log("getAllProblemsSolvedByUser", error);
+        return res.status(500).json({
+            message: "All Problems solved by User Fetching Failed",
+        })       
+    }
 }
 
 export {createProblem, getAllProblems, getProblemById, updateProblem, deleteProblem, getAllProblemsSolvedByUser};
