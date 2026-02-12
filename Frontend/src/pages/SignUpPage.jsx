@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 
+import AuthImagePattern from '../components/AuthImagePattern';
+// import { useAuthStore } from "../store/useAuthStore";
+
 import { Code, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 
 const SignUpSchema = z.object({
@@ -20,14 +23,11 @@ function SignUpPage() {
     const [showPassword, setShowPassword] = useState(false);
 
 
-    const create = async (data) => {
-        setError("")
-        try {
-
-        } catch (error) {
-            setError(error.message)
-        }
-    }
+    const create = async (data)=>{
+   
+     console.log(data);
+   }
+  
 
 
     return (
@@ -126,9 +126,15 @@ function SignUpPage() {
                         </div>
 
                         {/* submit button */}
-                        <button type="submit">
-                            Sign in
-                        </button>
+                        <button
+              type="submit"
+              className="btn btn-primary w-full"
+             
+            >
+              
+                Sign in
+              
+            </button>
                     </form>
 
 
@@ -146,6 +152,12 @@ function SignUpPage() {
             </div>
 
             {/* auth */}
+            <AuthImagePattern
+                title={"Welcome to our platform!"}
+                subtitle={
+                    "Sign up to access our platform and start using our services."
+                }
+            />
             {/*  //////////////////////////////////////////////////////////////////         */}
         </div>
     )
