@@ -10,11 +10,12 @@ import AuthImagePattern from '../components/AuthImagePattern';
 // import { useAuthStore } from "../store/useAuthStore";
 
 import { Code, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
 
 const LoginSchema = z.object({
     email: z.string().email("Enter a valid email"),
     password: z.string().min(8, "Password must be atleast of 8 characters"),
-    
+
 })
 
 function LoginPage() {
@@ -22,11 +23,18 @@ function LoginPage() {
     const { register, handleSubmit, formState: { errors }, } = useForm({ resolver: zodResolver(LoginSchema) });
     const [showPassword, setShowPassword] = useState(false);
 
+    const { login, isLoggingIn } = useAuthStore();
 
-    const create = async (data)=>{
-        console.log(data)
+    const create = async (data) => {
+        try {
+            await login(data)
+            console.log("login data", data)
+        } catch (error) {
+            console.error("login failed:", error);
+        }
+
     }
-  
+
 
 
     return (
@@ -104,16 +112,25 @@ function LoginPage() {
                         </div>
 
                         {/* submit button */}
-                         {/* submit button */}
+                        {/* submit button */}
                         <button
-              type="submit"
-              className="btn btn-primary w-full"
-             
-            >
-              
-                Login
-              
-            </button>
+                            type="submit"
+                            className="btn btn-primary w-full"
+                            disabled={isLoggingIn}
+
+
+                        >
+
+                            {isLoggingIn ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    Loading...
+                                </>
+                            ) : (
+                                "Login"
+                            )}
+
+                        </button>
                     </form>
 
 

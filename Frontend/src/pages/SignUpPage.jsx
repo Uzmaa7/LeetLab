@@ -10,6 +10,11 @@ import AuthImagePattern from '../components/AuthImagePattern';
 // import { useAuthStore } from "../store/useAuthStore";
 
 import { Code, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
+
+
+
+
 
 const SignUpSchema = z.object({
     email: z.string().email("Enter a valid email"),
@@ -22,12 +27,19 @@ function SignUpPage() {
     const { register, handleSubmit, formState: { errors }, } = useForm({ resolver: zodResolver(SignUpSchema) });
     const [showPassword, setShowPassword] = useState(false);
 
+    const { signup, isSigninUp } = useAuthStore();
 
-    const create = async (data)=>{
-   
-     console.log(data);
-   }
-  
+
+    const create = async (data) => {
+        try {
+            await signup(data)
+            console.log("signup data", data)
+        } catch (error) {
+            console.error("SignUp failed:", error);
+        }
+
+    }
+
 
 
     return (
@@ -127,14 +139,22 @@ function SignUpPage() {
 
                         {/* submit button --*/}
                         <button
-              type="submit"
-              className="btn btn-primary w-full "
-             
-            >
-              
-                Sign in
-              
-            </button>
+                            type="submit"
+                            className="btn btn-primary w-full "
+                            disabled={isSigninUp}
+
+                        >
+
+                            {isSigninUp ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    Loading...
+                                </>
+                            ) : (
+                                "Sign in"
+                            )}
+
+                        </button>
                     </form>
 
 
