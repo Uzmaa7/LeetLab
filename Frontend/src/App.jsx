@@ -6,7 +6,7 @@ import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignUpPage from "./pages/SignUpPage.jsx";
 import { useAuthStore } from "./store/useAuthStore.js";
-import { Layout, Loader } from "lucide-react";
+import { Loader } from "lucide-react";
 import Layout from "./layout/Layout";
 
 
@@ -26,21 +26,26 @@ const App = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-start">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-start">
       <Toaster />
       <Routes>
+        {/* Layout ko Parent Route banayein */}
+        <Route path="/" element={<Layout />}>
 
+          {/* Yeh saare routes ab Layout ke Outlet mein dikhenge */}
+          <Route
+            index
+            element={authUser ? <HomePage /> : <Navigate to="/login" />}
+          />
 
-        <Route path="/" element={<Layout />} />
+          {/* Agar aap aur pages add karte hain (like Profile), wo bhi yahan aayenge */}
+          {/* <Route path="profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} /> */}
 
-        <Route
-          index
-          element={authUser ? <HomePage /> : <Navigate to={"/login"} />} />
+        </Route>
 
-
-        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to={"/"} />} />
-
-        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to={"/"} />} />
+        {/* Login aur Signup ko Layout se bahar rakh sakte hain agar wahan Navbar nahi chahiye */}
+        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
       </Routes>
     </div>
   )
