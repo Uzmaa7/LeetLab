@@ -8,6 +8,8 @@ import SignUpPage from "./pages/SignUpPage.jsx";
 import { useAuthStore } from "./store/useAuthStore.js";
 import { Loader } from "lucide-react";
 import Layout from "./layout/Layout";
+import AddProblem from "./pages/AddProblem.jsx";
+import AdminRoute from "./components/AdminRoutes.jsx";
 
 
 const App = () => {
@@ -46,6 +48,18 @@ const App = () => {
         {/* Login aur Signup ko Layout se bahar rakh sakte hain agar wahan Navbar nahi chahiye */}
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
+
+        <Route element = {<AdminRoute/>} >
+          <Route path="add-problem" element = {authUser ? <AddProblem/> : <Navigate to = "/" />} />
+        </Route>
+
+
+
+
+
+
+
+
       </Routes>
     </div>
   )
