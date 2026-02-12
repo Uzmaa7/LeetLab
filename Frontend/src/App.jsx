@@ -1,21 +1,21 @@
 import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import {Toaster} from "react-hot-toast"
+import { Toaster } from "react-hot-toast"
 
 import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignUpPage from "./pages/SignUpPage.jsx";
 import { useAuthStore } from "./store/useAuthStore.js";
-import { Loader } from "lucide-react";
-
+import { Layout, Loader } from "lucide-react";
+import Layout from "./layout/Layout";
 
 
 const App = () => {
-  const {authUser, checkAuth, isCheckingAuth} = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
 
-  useEffect(()=>{
+  useEffect(() => {
     checkAuth()
-  },[checkAuth])
+  }, [checkAuth])
 
   if (isCheckingAuth && !authUser) {
     return (
@@ -24,16 +24,23 @@ const App = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex flex-col items-center justify-start">
-      <Toaster/>
+      <Toaster />
       <Routes>
-          <Route path="/" element = { authUser ? <HomePage/> : <Navigate to={"/login"}/> }  />
 
-          <Route path="/login" element = { !authUser ? <LoginPage/> : <Navigate to={"/"}/> } />
 
-          <Route path="/signup" element = { !authUser ? <SignUpPage/> : <Navigate to={"/"}/> } />
+        <Route path="/" element={<Layout />} />
+
+        <Route
+          index
+          element={authUser ? <HomePage /> : <Navigate to={"/login"} />} />
+
+
+        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to={"/"} />} />
+
+        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to={"/"} />} />
       </Routes>
     </div>
   )
