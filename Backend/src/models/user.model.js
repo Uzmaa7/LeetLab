@@ -10,8 +10,6 @@ dotenv.config({
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true,
-        unique: true,
         trim: true,
         lowercase: true,
         minlength: [3, "username must be atleast 3 characters long"],

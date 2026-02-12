@@ -31,13 +31,13 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const registerUser = async (req, res) => {
 
-    const {username, fullname, email, password} = req.body;
+    const {fullname, email, password} = req.body;
 
     try{
         //find existed user
         const existingUser = await User.findOne(
             {
-                $or: [{username}, {email}]
+                $or: [{fullname}, {email}]
             }
         )
 
@@ -51,7 +51,6 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            username,
             email,
             fullname,
             password: hashedPassword,
@@ -65,16 +64,17 @@ const registerUser = async (req, res) => {
         }
 
         const token = jwt.sign(
-            {id: user._id},
+            {_id: user._id},
             process.env.JWT_SECRET,
             {expiresIn: "7d"} 
         )
 
-        res.cookie("jwtTOKEN", token,
+        res.cookie("accessToken", token,
             {
                 httpOnly:true,
-                sameSite:"strict",
-                secure:process.env.NODE_ENV !== "development",
+                
+                sameSite: "lax", 
+                secure: false,
                 maxAge: 1000 * 60 * 60 * 24 * 7 // 7days
             }
         )
@@ -84,7 +84,6 @@ const registerUser = async (req, res) => {
             user: {
                 id: user._id,
                 email: user.email,
-                username: user.username,
                 role: user.role,
                 avatar: user.avatar
             }
@@ -128,7 +127,8 @@ const loginUser = async (req, res) => {
         //send these tokens to cookies
         const options = {
             httpOnly: true,//only server can modify now not frontend
-            secure: true,
+            secure: false,
+            sameSite: "lax",
         }
 
         return res
@@ -164,8 +164,9 @@ const logoutUser = async (req, res) => {
         );
 
         const options = {
-            httpOnly: true,//only server can modify now not frontend
-            secure: true,
+            httpOnly: true,
+            secure: false, 
+            sameSite: "lax",
         }
 
         return res
@@ -249,4 +250,20 @@ const refreshAccessToken  = async ( req, res) => {
     }
 }
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken};
+
+
+ const check = async (req , res)=>{
+    try {
+        res.status(200).json({
+            success:true,
+            message:"User authenticated successfully",
+            user:req.user
+        });
+    } catch (error) {
+        console.error("Error checking user:", error);
+        res.status(500).json({
+            error:"Error checking user"
+        })
+    }
+}
+export {registerUser, loginUser, logoutUser, refreshAccessToken, check};

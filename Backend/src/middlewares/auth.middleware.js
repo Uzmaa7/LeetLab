@@ -9,6 +9,7 @@ dotenv.config({
 
 
 export const verifyJWT = async (req, res, next) => {
+    console.log("Cookies received:", req.cookies);
     try {
         const token = req.cookies?.accessToken || req.header
         ("Authorization")?.replace("Bearer ", "")
@@ -23,7 +24,7 @@ export const verifyJWT = async (req, res, next) => {
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     
     
-            const user = await User.findById(decodedToken?._id).select("-password,-refreshToken");
+            const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
             if(!user){
                 return res.status(401).json({
                     message: "Invalid Access Token"
