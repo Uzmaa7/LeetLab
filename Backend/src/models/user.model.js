@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { AvailableUserRoles, UserRolesEnum } from "../utils/constants.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 dotenv.config({
     path: "./.env"
@@ -10,6 +11,7 @@ dotenv.config({
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
+        required:true,
         trim: true,
         lowercase: true,
         minlength: [3, "username must be atleast 3 characters long"],
@@ -127,6 +129,11 @@ userSchema.methods.generateRefreshToken = function (){
         }
     )
             
+}
+
+
+userSchema.methods.verifyPassword = async function(password){
+    return await bcrypt.compare(password, this.password)
 }
 
 

@@ -42,7 +42,27 @@ const loginValidation = () => {
     ]
 }
 
+const changePasswordValidation = () => {
+    return[
+        body("oldPassword")
+        .trim()
+        .notEmpty().withMessage("this field is required")
+        .isLength({min:8}).withMessage("password must be atleast 8 characters long"),
+
+        body("newPassword")
+        .trim()
+        .notEmpty().withMessage("this field is required")
+        .isLength({min:8}).withMessage("password must be atleast 8 characters long"),
+
+        body("confirmPassword")
+        .trim()
+        .notEmpty().withMessage("this field is required")
+        .isLength({min:8}).withMessage("password must be atleast 8 characters long"),
+
+    ]
+}
 
 
 
-export {registrationValidation, loginValidation};
+
+export {registrationValidation, loginValidation, changePasswordValidation};

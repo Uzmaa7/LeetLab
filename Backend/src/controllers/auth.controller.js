@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { registrationValidation } from "../validators/auth.Validators.js";
 import sendRegistartionEmail from "../services/mail.service.js";
 
+
 dotenv.config({
     path: "./.env"
 })
@@ -191,6 +192,74 @@ const logoutUser = async (req, res) => {
 }
 
 
+const changePassword = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if(!user){
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            })
+        }
+    
+    
+        const {oldPassword, newPassword, confirmPassword } = req.body;
+    
+        if(oldPassword === newPassword){
+            return res.status(400).json({
+                success: false,
+                message: "new password must be different from old password"
+            })
+        }
+    
+        if(newPassword !== confirmPassword){
+            return res.status(400).json({
+                success: false,
+                message: "mismatch new password and confirm password"
+            })
+        }
+    
+        const isMatchedOldPassword = await user.verifyPassword(oldPassword);
+        if(!isMatchedOldPassword){
+            return res.status(401).json({
+                success: false,
+                message: "Invalid old password"
+            })
+        }
+        
+        const newPasswordHashed = await bcrypt.hash(newPassword, 10)
+        user.password = newPasswordHashed;
+    
+        //revoke al sessions
+        user.refreshToken = undefined;
+    
+        await user.save();
+    
+        const options = {
+            httpOnly: true,
+            secure: true, 
+            sameSite: "lax",
+        }
+    
+        return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json({
+            message: "Password changed successfully"
+        })
+    
+    } catch (error) {
+        console.log("Error changePassword", error);
+        res.status(500).json({
+            message: "Error in changing password"
+        })
+    }
+
+
+}
+
+
 const resetPassword = async (req, res) => {
     
 }
@@ -296,4 +365,4 @@ const refreshAccessToken  = async ( req, res) => {
         })
     }
 }
-export {registerUser, loginUser, logoutUser, refreshAccessToken, check};
+export {registerUser, loginUser, logoutUser, refreshAccessToken, check, changePassword};
