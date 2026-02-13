@@ -4,7 +4,8 @@ import User from "../models/user.model.js";
 import { UserRolesEnum } from "../utils/constants.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-
+import { registrationValidation } from "../validators/auth.Validators.js";
+import sendRegistartionEmail from "../services/mail.service.js";
 
 dotenv.config({
     path: "./.env"
@@ -31,7 +32,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const registerUser = async (req, res) => {
 
-    const {fullname, email, password} = req.body;
+    const {username, fullname, email, password} = req.body;
 
     try{
         //find existed user
@@ -51,6 +52,7 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
+            username,
             email,
             fullname,
             password: hashedPassword,
@@ -88,6 +90,8 @@ const registerUser = async (req, res) => {
                 avatar: user.avatar
             }
         })
+
+        await sendRegistartionEmail(email, fullname);
     }
     catch(error){
         console.log("Error creating user", error);
@@ -127,8 +131,8 @@ const loginUser = async (req, res) => {
         //send these tokens to cookies
         const options = {
             httpOnly: true,//only server can modify now not frontend
-            secure: false,
-            sameSite: "lax",
+            secure: true,
+            sameSite: "none",
         }
 
         return res
@@ -165,7 +169,7 @@ const logoutUser = async (req, res) => {
 
         const options = {
             httpOnly: true,
-            secure: false, 
+            secure: true, 
             sameSite: "lax",
         }
 
@@ -185,6 +189,32 @@ const logoutUser = async (req, res) => {
         })
    }
 }
+
+
+const resetPassword = async (req, res) => {
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //======endPoint so that user can refresh its access token=================
 // as soon as your access token expires you can request for new access token
