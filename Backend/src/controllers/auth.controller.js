@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { registrationValidation } from "../validators/auth.Validators.js";
 import sendRegistartionEmail from "../services/mail.service.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+
 
 
 dotenv.config({
@@ -260,9 +262,72 @@ const changePassword = async (req, res) => {
 }
 
 
-const resetPassword = async (req, res) => {
+const updateAvatar = async (req, res) => {
+    const localPath = req.file?.path
+    if(!localPath){
+        return res.status(400).json({
+            message: "Avatar file is missing"
+        })
+    }
+
+    //avatar file must be an image file
+    if (!req.file.mimetype.startsWith("image/")) {
+        return res.status(400).json({
+            message: "Only image files are allowed"
+        })
+    }
+
+    // Upload this file on cloudinary 
+    const response = await uploadOnCloudinary(localPath);
+    if(!response){
+        return res.status(400).json({
+            message: "error while uploading on cloudinary"
+        })
+    }
+
+    try {
+        
+        const user = await User.findById(req.user._id);
+        if(!user){
+            return res.status(400).json({
+                message: "User not found"
+            })
+        }
+        const oldPublicId = user.avatar.public_id;
+
+        // 3. Database update karo naye public_id aur url ke saath
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user?._id,
+            {
+                $set: {
+                    avatar: {
+                        public_id: response.public_id,
+                        url: response.url
+                    }
+                }
+            },
+            { new: true }
+        ).select("-password -refreshToken");
     
+        // 4. AGAR database update ho gaya, tab purana avatar Cloudinary se delete karo
+        if (oldPublicId) {
+            await deleteFromCloudinary(oldPublicId);
+        }
+
+
+        return res.status(200).json({
+                message: "Avatar updated successfully",
+                user: updatedUser
+        });
+
+
+    } catch (error) {
+        return res.status(500).json({ message: "updateAvatar error" });
+    }
+
 }
+
+
 
 
 
@@ -365,4 +430,4 @@ const refreshAccessToken  = async ( req, res) => {
         })
     }
 }
-export {registerUser, loginUser, logoutUser, refreshAccessToken, check, changePassword};
+export {registerUser, loginUser, logoutUser, refreshAccessToken, check, changePassword, updateAvatar};

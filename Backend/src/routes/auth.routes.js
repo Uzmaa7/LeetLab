@@ -1,8 +1,9 @@
 import express from "express";
-import { loginUser, registerUser, logoutUser, changePassword, refreshAccessToken, check } from "../controllers/auth.controller.js";
+import { loginUser, registerUser, logoutUser, changePassword, refreshAccessToken, check, updateAvatar } from "../controllers/auth.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { registrationValidation, loginValidation ,changePasswordValidation} from "../validators/auth.Validators.js";
 import { validate } from "../middlewares/validator.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 
 
@@ -21,6 +22,7 @@ authRouter.get("/check", verifyJWT, check);
 authRouter.post("/change-password", verifyJWT, changePasswordValidation(), validate, changePassword);
 // authRouter.get("/check");
 
+authRouter.patch('/update-avatar', verifyJWT,  upload.single("avatar"), updateAvatar);
 
 
 export default authRouter;

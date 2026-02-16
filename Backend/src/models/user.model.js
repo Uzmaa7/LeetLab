@@ -48,8 +48,14 @@ const userSchema = new mongoose.Schema({
     },
 
     avatar: {
-        type:String,
-
+        public_id: {
+            type: String,
+            default: ""
+        },
+        url: {
+            type: String,
+            default: "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+        }
     },
 
     isVerified: {
