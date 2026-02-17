@@ -117,31 +117,31 @@ const getMyGroups = async (req, res) => {
 const addMembers = async (req, res) => {
 
     //members[] = [id1, id2, id3]
-    const {chatId, members} = req.body;
+    const { chatId, members } = req.body;
 
     try {
         // find the chat in which you want to add members
         const chat = await Chat.findById(chatId);
-    
-        if(!chat || !chat.groupChat){
+
+        if (!chat || !chat.groupChat) {
             return res.status(404).json({
                 success: false,
                 message: "Chat not found",
             })
         }
-    
+
         // only admin can add members
-        if(chat.createdBy.toString() !== req.user._id.toString()){
+        if (chat.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: "Only admin can add members"
             })
         }
-    
+
         // if the member is already added 
         // some -> kya ek br bhi meri condition true ho rhi hai -> return true;
         const alreadyAdded = members.some((id) => chat.members.includes(id));
-        if(alreadyAdded){
+        if (alreadyAdded) {
             return res.status(400).json({
                 success: false,
                 message: "members are already added in the group"
@@ -149,36 +149,36 @@ const addMembers = async (req, res) => {
         }
 
         //Limit Check
-        if(chat.members.length + members.length > 5){
+        if (chat.members.length + members.length > 5) {
             return res.status(400).json({
                 message: "Group limit exceeded"
             })
         }
-    
+
         //1. User.findById(id) return a promise;
         //2. newMembersPromise[] = [P1, P2, P3];  -> newMembersPromise ek array hai jisme sirf Promises bhare hain
         //3. Promise.all sare promises ke liye ek sath wait karta hai -> Agar aap ek-ek karke await karte (for loop mein), toh server bahut slow ho jata. Promise.all sabko parallelly (ek saath) fetch karta hai.
         //4. newMembers[] = [{object1}, {object2}, {object3}]  id , fullname
-    
+
         const newMembersPromise = members.map((id) => User.findById(id, "fullname"));
         const newMembers = await Promise.all(newMembersPromise);
-        
+
         //5. Filter out those users who were not found in database
         const people = newMembers
-        .filter((m) => m !== null)
-        .map((m) => m._id);
+            .filter((m) => m !== null)
+            .map((m) => m._id);
 
         chat.members.push(...people);//ids pushed
-    
-    
+
+
         await chat.save()
-    
+
         return res.status(200).json({
-                success: true,
-                message: "members added succesfully",
-                
+            success: true,
+            message: "members added succesfully",
+
         })
-    
+
         //emitevent-> 2:39
     } catch (error) {
         console.error("addMembers Error:", error);
@@ -191,56 +191,56 @@ const addMembers = async (req, res) => {
 
 const removeMember = async (req, res) => {
 
-    const {chatId, userRemoveId} = req.body;
+    const { chatId, userRemoveId } = req.body;
 
     try {
         const chat = await Chat.findById(chatId);
         const userRemove = await User.findById(userRemoveId).select("fullname");
-    
-        if(!userRemove){
-             return res.status(404).json({
-                    success: false,
-                    message: "User not found",
-            })
-        }
-    
-        if(!chat || !chat.groupChat){
+
+        if (!userRemove) {
             return res.status(404).json({
-                    success: false,
-                    message: "Chat not found",
+                success: false,
+                message: "User not found",
             })
         }
-    
+
+        if (!chat || !chat.groupChat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            })
+        }
+
         // 1. Authorization: Only admin can remove
-        if(chat.createdBy.toString() !== req.user._id.toString()){
+        if (chat.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: "Only admin can add members"
             })
         }
-    
+
         // 2. Does userRemove exist in this group ?
-        const userExist = chat.members.some((id) =>  id.toString() === userRemoveId.toString() )
-    
-        if(!userExist){
+        const userExist = chat.members.some((id) => id.toString() === userRemoveId.toString())
+
+        if (!userExist) {
             return res.status(400).json({
                 message: "user must be a member of this chat"
             })
         }
-    
+
         // 3. remove the member from the group
         // filter returns an array []
         chat.members = chat.members.filter((id) => id.toString() !== userRemoveId.toString());
-    
-    
+
+
         await chat.save()
-    
+
         //emitEvent-249
         return res.status(200).json({
-                    success: true,
-                    message: "members removed succesfully",
-                    
-            })
+            success: true,
+            message: "members removed succesfully",
+
+        })
     } catch (error) {
         console.error("removeMember Error:", error);
         return res.status(500).json({
@@ -248,6 +248,55 @@ const removeMember = async (req, res) => {
             message: " error while removing  member from the group"
         });
     }
+}
+
+const exitGroup = async (req, res) => {
+
+    const chatId = req.params.id;
+
+    const chat = await Chat.findById(chatId);
+    if (!chat || !chat.groupChat) {
+        return res.status(404).json({
+            success: false,
+            message: "Chat not found",
+        })
+    }
+
+    // 1. Check if user is actually a member
+
+    const isMember = chat.members.some((id) => id.toString() === req.user._id.toString())
+
+    if (!isMember) {
+        return res.status(400).json({
+            message: "You are not a member of this group"
+        })
+    }
+
+    //if admin wants to exit the group
+    //delete the group
+    if (req.user._id.toString() === chat.createdBy.toString()) {
+        await Chat.findByIdAndDelete(chatId);
+        return res.status(200).json({
+            success: true,
+            message: "Group deleted because admin left"
+        });
+    }
+
+
+
+    //update chat.members
+    chat.members = chat.members.filter((id) => id.toString() !== req.user._id.toString());
+
+    // chat save
+    await chat.save();
+
+    return res.status(200).json({
+        success: true,
+        message: "You left the group successfully",
+    });
+
+    // emit 256
+
 }
 
 
