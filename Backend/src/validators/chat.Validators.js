@@ -1,6 +1,6 @@
 import {body} from "express-validator";
 
-const chatValidation = () => {
+const createGroupChatValidation = () => {
     return [
         body("name")
         .trim()
@@ -13,4 +13,4 @@ const chatValidation = () => {
     ]
 }
 
-export {chatValidation};
+export {createGroupChatValidation};
