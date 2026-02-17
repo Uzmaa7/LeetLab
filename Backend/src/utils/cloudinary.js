@@ -40,15 +40,27 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicIds, resource_type = "image") => {
     try {
         
-        if (!publicId) return null;
+        if (!publicIds || publicIds.length === 0) return null;
 
-        const response = await cloudinary.uploader.destroy(publicId, {
-            resource_type: "auto"
+        //method to delete single file
+        // const response = await cloudinary.uploader.destroy(publicId, {
+        //     resource_type: "auto"
+        // });
+
+        //  Ise hamesha ek array bana do, chahe single string hi kyu na aaye
+        // Taaki delete_resources hamesha sahi format receive kare
+
+        const idsToDelete = Array.isArray(publicIds) ? publicIds : [publicIds];
+
+        //method to delete multiple files in one go
+        const response = await cloudinary.api.delete_resources(idsToDelete, {
+            resource_type
         });
-        
+
+
         console.log('Asset deleted on Cloudinary')
         return response;
 

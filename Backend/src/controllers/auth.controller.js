@@ -311,7 +311,7 @@ const updateAvatar = async (req, res) => {
     
         // 4. AGAR database update ho gaya, tab purana avatar Cloudinary se delete karo
         if (oldPublicId) {
-            await deleteFromCloudinary(oldPublicId);
+            await deleteFromCloudinary([oldPublicId], "image");
         }
 
 
