@@ -1,6 +1,8 @@
 import { validationResult } from "express-validator";
 
-
+// "I use validationResult as an extractor function provided by express-validator. 
+// Its purpose is to gather all the validation errors that were previously attached to the Request object 
+// by the validation middleware (like body or param)."
 
 export const validate = (req, res, next) => {
     const errors = validationResult(req);

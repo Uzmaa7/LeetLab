@@ -189,8 +189,69 @@ const addMembers = async (req, res) => {
     }
 }
 
+const removeMember = async (req, res) => {
+
+    const {chatId, userRemoveId} = req.body;
+
+    try {
+        const chat = await Chat.findById(chatId);
+        const userRemove = await User.findById(userRemoveId).select("fullname");
+    
+        if(!userRemove){
+             return res.status(404).json({
+                    success: false,
+                    message: "User not found",
+            })
+        }
+    
+        if(!chat || !chat.groupChat){
+            return res.status(404).json({
+                    success: false,
+                    message: "Chat not found",
+            })
+        }
+    
+        // 1. Authorization: Only admin can remove
+        if(chat.createdBy.toString() !== req.user._id.toString()){
+            return res.status(403).json({
+                success: false,
+                message: "Only admin can add members"
+            })
+        }
+    
+        // 2. Does userRemove exist in this group ?
+        const userExist = chat.members.some((id) =>  id.toString() === userRemoveId.toString() )
+    
+        if(!userExist){
+            return res.status(400).json({
+                message: "user must be a member of this chat"
+            })
+        }
+    
+        // 3. remove the member from the group
+        // filter returns an array []
+        chat.members = chat.members.filter((id) => id.toString() !== userRemoveId.toString());
+    
+    
+        await chat.save()
+    
+        //emitEvent-249
+        return res.status(200).json({
+                    success: true,
+                    message: "members removed succesfully",
+                    
+            })
+    } catch (error) {
+        console.error("removeMember Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: " error while removing  member from the group"
+        });
+    }
+}
 
 
 
 
-export { createGroup, getMyChats, getMyGroups, addMembers };
+
+export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup };
