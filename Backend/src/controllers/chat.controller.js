@@ -361,4 +361,47 @@ const sendAttachment = async (req, res) => {
     //emit 39
 }
 
-export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment };
+const getChatDetails = async (req, res) => {
+
+    // agr user ko details chahiye
+    if(req.query.populate === "true"){
+        const chat = await Chat.findById(req.params.id)
+        .populate
+        ("members", "fullname avatar")
+
+        if(!chat){
+            return res.status(404).json({
+                message: "Chat not found"
+            })
+        }
+
+        chat.members = chat.members.map(({_id, fullname, avatar}) => ({
+            _id,
+            fullname,
+            avatar: avatar.url
+        }))
+
+        return res.status(200).json({
+           success: true,
+           chat,
+        })
+    }
+    // simple request, no details of members
+    else{
+        
+        const chat = await Chat.findById(req.params.id)
+        if(!chat){
+            return res.status(404).json({
+                message: "Chat not found"
+            })
+        }
+        return res.status(200).json({
+           success: true,
+           chat,
+        })
+
+    }
+}
+
+
+export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment, getChatDetails };
