@@ -1,4 +1,5 @@
 import Chat from "../models/chat.model.js";
+import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import { findOtherMember } from "../utils/chat.js";
 
@@ -299,8 +300,65 @@ const exitGroup = async (req, res) => {
 
 }
 
+const sendAttachment = async (req, res) => {
+    // Jab hum Multer use karte hain, toh woh hamari file ko public / images
+    //  folder mein save karne ke baad humein ek Object deta hai.
+
+    //  Jab aap upload.array("files") use karti hain, toh req.files ke andar har ek file 
+    //  ka structure aisa hota hai:
+
+    // {
+    //     fieldname: 'files',
+    //     originalname: 'my-photo.jpg',
+    //     encoding: '7bit',
+    //     mimetype: 'image/jpeg',
+    //     destination: './public/images', // Jahan file save hui
+    //     filename: '170818...-photo.jpg', // Jo unique naam Multer ne diya
+    //     path: 'public/images/170818...-photo.jpg', // <--- YE HAI ASLI CHEEZ
+    //     size: 50000
+    // }
 
 
+    const { chatId } = req.body;
+
+    const files = req.files || []; //[{}, {}. {}]
+
+    if (files.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "please provide attachment",
+        })
+    }
+
+    // Step 1: Har file ko Cloudinary par bhejo (Parallelly)
+    const uploadPromises = files.map((file) => uploadOnCloudinary(file.path));
+
+    // Step 2: Sabka wait karo (Promise.all)
+    const results = await Promise.all(uploadPromises);
+
+    // Step 3: Cloudinary se jo URLs aaye hain, unhe filter karke clean karo
+    const attachments = results.map((result) => ({
+        public_id: result.public_id,
+        url: result.secure_url,
+    }));
 
 
-export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup };
+    // create a message
+    const messageForDB = {
+        sender: req.user._id,
+        chat: chatId,
+        content: "",
+        attachments:attachments,
+    }
+    const message = await Message.create(messageForDB);
+
+    
+    return res.status(200).json({
+        success: true,
+        attachments
+    });
+
+    //emit 39
+}
+
+export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment };
