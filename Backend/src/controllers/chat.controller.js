@@ -2,6 +2,7 @@ import Chat from "../models/chat.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import { findOtherMember } from "../utils/chat.js";
+import { deleteFromCloudinary } from "../utils/cloudinary.js";
 
 
 
@@ -424,7 +425,7 @@ const getChatDetails = async (req, res) => {
 
 const renameChat = async (req, res) => {
 
-    const chatId  = req.params.id;
+    const chatId = req.params.id;
     const { name } = req.body;
 
     try {
@@ -469,7 +470,78 @@ const renameChat = async (req, res) => {
 
 }
 
+const deleteChat = async (req, res) => {
+    const chatId = req.params.id;
+
+    try {
+        const chat = await Chat.findById(chatId)
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            })
+        }
+
+        // 1. Check if user is actually a member
+
+        const isMember = chat.members.some((id) => id.toString() === req.user._id.toString())
+
+        if (chat.groupChat && !isMember) {
+            return res.status(403).json({
+                message: "You are not a member of this group"
+            })
+        }
+
+
+        const members = chat.members;
+
+        //only admin can delete the groupchat
+        if(chat.groupChat && chat.createdBy.toString() !== req.user._id.toString()){
+             return res.status(400).json({
+                message: "You are not allowed to delete this group"
+            })
+        }
+
+        // admin , member, groupChat/Chat
+        // we have to delete all messages as well as attachments from cloudinary
+
+        const allMessageOfThisChat = await Message.find({chat : chatId})
+
+        const public_ids = [];
+
+        allMessageOfThisChat.forEach(({attachments}) => {
+            attachments.forEach(({public_id}) => {
+                public_ids.push(public_id)
+            })
+        })
+
+        //delete files from cloudinary
+        await Promise.all([
+            deleteFromCloudinary(public_ids),
+            chat.deleteOne(),
+            Message.deleteMany({chat : chatId}),
+
+        ])
+
+        return res.status(200).json({
+            success: true,
+            message: "deleteChat successfully",
+            
+        })
+
+        //emit 333
+
+        
+    } catch (error) {
+        console.error("deleteChat Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: " error while deleting the chat"
+        });
+    }
+}
+
 export {
     createGroup, getMyChats, getMyGroups, addMembers, removeMember,
-    exitGroup, sendAttachment, getChatDetails, renameChat
+    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat
 };
