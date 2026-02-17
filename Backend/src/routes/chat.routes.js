@@ -2,7 +2,7 @@ import express from "express";
 
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment, getChatDetails } from "../controllers/chat.controller.js";
+import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment, getChatDetails, renameChat } from "../controllers/chat.controller.js";
 import { createGroupChatValidation, addMembersValidation } from "../validators/chat.Validators.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";

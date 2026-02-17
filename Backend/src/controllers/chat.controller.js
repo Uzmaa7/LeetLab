@@ -348,11 +348,11 @@ const sendAttachment = async (req, res) => {
         sender: req.user._id,
         chat: chatId,
         content: "",
-        attachments:attachments,
+        attachments: attachments,
     }
     const message = await Message.create(messageForDB);
 
-    
+
     return res.status(200).json({
         success: true,
         attachments
@@ -364,44 +364,112 @@ const sendAttachment = async (req, res) => {
 const getChatDetails = async (req, res) => {
 
     // agr user ko details chahiye
-    if(req.query.populate === "true"){
+    if (req.query.populate === "true") {
         const chat = await Chat.findById(req.params.id)
-        .populate
-        ("members", "fullname avatar")
+            .populate
+            ("members", "fullname avatar")
+            .lean()
 
-        if(!chat){
+        // Jab aap .lean() use karti hain, toh Mongoose aapko asli register nahi deta, 
+        // balki us register ke ek page ki Photocopy (Plain JS Object) nikaal kar deta hai.
+
+        // Aapne photocopy li.
+        // Aapne us photocopy par pen se kuch changes kiye(yani chat.members.map(...)).
+        // Kya asli register mein changes hue ? * Jawab hai: NAHI.
+        // Database mein tabhi save hota hai jab hum asli register(Mongoose Document) par kaam karte hain aur uske baad.save() function call karte hain. .lean() use karne par humein.save() function milta hi nahi hai.
+
+
+        // GET Requests mein: Jab aapko sirf data Dikhana (Read) hai 
+        // aur us par koi .save() ya .update() nahi chalana, toh hamesha
+        // .lean() use karein. Yeh response time fast kar deta hai.
+
+        // Fayda 1 (Speed): Photocopy nikaalna (Plain Object) asli register utha kar laane se bahut fast hota hai.
+        //Fayda 2 (Customization): Humein frontend ko saara data (jaise password ya extra fields) nahi bhejna tha. Isliye humne photocopy par apna "map" chalaya aur sirf kaam ka data (fullname, url) filter karke user ko bhej diya.
+
+        if (!chat) {
             return res.status(404).json({
                 message: "Chat not found"
             })
         }
 
-        chat.members = chat.members.map(({_id, fullname, avatar}) => ({
+        chat.members = chat.members.map(({ _id, fullname, avatar }) => ({
             _id,
             fullname,
             avatar: avatar.url
         }))
 
+
+
         return res.status(200).json({
-           success: true,
-           chat,
+            success: true,
+            chat,
         })
     }
     // simple request, no details of members
-    else{
-        
-        const chat = await Chat.findById(req.params.id)
-        if(!chat){
+    else {
+
+        const chat = await Chat.findById(req.params.id).lean()
+        if (!chat) {
             return res.status(404).json({
                 message: "Chat not found"
             })
         }
         return res.status(200).json({
-           success: true,
-           chat,
+            success: true,
+            chat,
         })
 
     }
 }
 
+const renameChat = async (req, res) => {
 
-export { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, sendAttachment, getChatDetails };
+    const chatId  = req.params.id;
+    const { name } = req.body;
+
+    try {
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.groupChat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            })
+        }
+
+        // rename feature hum sbko de rhe hain
+        const user = req.user;
+
+        //Only group members are allowed to rename the group ?
+        const isMember = chat.members.some((id) => id.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(404).json({
+                success: false,
+                message: "Only members are allowed to rename the group"
+            })
+        }
+
+        chat.name = name;
+        await chat.save();
+
+        //emit 323
+
+        return res.status(200).json({
+            success: true,
+            message: "Group renamed successfully",
+            user,
+        })
+    } catch (error) {
+        console.error("renameChat Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: " error while renaming the group"
+        });
+    }
+
+
+}
+
+export {
+    createGroup, getMyChats, getMyGroups, addMembers, removeMember,
+    exitGroup, sendAttachment, getChatDetails, renameChat
+};
