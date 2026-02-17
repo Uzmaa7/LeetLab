@@ -1,5 +1,8 @@
 import Chat from "../models/chat.model.js";
+import User from "../models/user.model.js";
 import { findOtherMember } from "../utils/chat.js";
+
+
 
 const createGroup = async (req, res) => {
     // Groupname, members, 
@@ -111,6 +114,83 @@ const getMyGroups = async (req, res) => {
 
 }
 
+const addMembers = async (req, res) => {
+
+    //members[] = [id1, id2, id3]
+    const {chatId, members} = req.body;
+
+    try {
+        // find the chat in which you want to add members
+        const chat = await Chat.findById(chatId);
+    
+        if(!chat || !chat.groupChat){
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found",
+            })
+        }
+    
+        // only admin can add members
+        if(chat.createdBy.toString() !== req.user._id.toString()){
+            return res.status(403).json({
+                success: false,
+                message: "Only admin can add members"
+            })
+        }
+    
+        // if the member is already added 
+        // some -> kya ek br bhi meri condition true ho rhi hai -> return true;
+        const alreadyAdded = members.some((id) => chat.members.includes(id));
+        if(alreadyAdded){
+            return res.status(400).json({
+                success: false,
+                message: "members are already added in the group"
+            })
+        }
+
+        //Limit Check
+        if(chat.members.length + members.length > 5){
+            return res.status(400).json({
+                message: "Group limit exceeded"
+            })
+        }
+    
+        //1. User.findById(id) return a promise;
+        //2. newMembersPromise[] = [P1, P2, P3];  -> newMembersPromise ek array hai jisme sirf Promises bhare hain
+        //3. Promise.all sare promises ke liye ek sath wait karta hai -> Agar aap ek-ek karke await karte (for loop mein), toh server bahut slow ho jata. Promise.all sabko parallelly (ek saath) fetch karta hai.
+        //4. newMembers[] = [{object1}, {object2}, {object3}]  id , fullname
+    
+        const newMembersPromise = members.map((id) => User.findById(id, "fullname"));
+        const newMembers = await Promise.all(newMembersPromise);
+        
+        //5. Filter out those users who were not found in database
+        const people = newMembers
+        .filter((m) => m !== null)
+        .map((m) => m._id);
+
+        chat.members.push(...people);//ids pushed
+    
+    
+        await chat.save()
+    
+        return res.status(200).json({
+                success: true,
+                message: "members added succesfully",
+                
+        })
+    
+        //emitevent-> 2:39
+    } catch (error) {
+        console.error("addMembers Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: " error while adding members to the group"
+        });
+    }
+}
 
 
-export { createGroup, getMyChats, getMyGroups };
+
+
+
+export { createGroup, getMyChats, getMyGroups, addMembers };
