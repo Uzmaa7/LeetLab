@@ -100,6 +100,64 @@ const sendRequest = async (req, res) => {
     }
 }
 
+const acceptRequest = async (req, res) => {
+
+    const {requestId, accept} = req.body;
+
+    try {
+
+        const request = await Request.findById(requestId)
+        .populate("sender", "fullname avatar")
+        .populate("receiver", "fullname avatar")
+
+        if(!request){
+            return res.status(404).json({
+            success: false,
+            message: "Request not found"
+            });
+        }
+
+        if(request.receiver._id.toString() !== req.user._id.toString()){
+            return res.status(401).json({
+                message : "You are not authorized to accept this request"
+            })
+        }
+
+        if(!accept){
+            await request.deleteOne();
+            return res.status(200).json({
+            success: true,
+            message: "request rejected",
+            });
+        }
+
+        const members = [request.sender._id, request.receiver._id];
+        
+        await Promise.all([
+            Chat.create({
+                name: `${request.sender.fullname}-${request.receiver.fullname}`,
+                members
+            }),
+
+            request.deleteOne(),
+        ])
+
+        //emit 453
+        return res.status(200).json({
+            success: true,
+            message: "accept request successfully",
+            senderId: request.sender._id,
+        });
 
 
-export { searchUsersInTalkTown, sendRequest };
+    } catch (error) {
+        console.error("acceptRequest error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in accepting request"
+        });
+    }
+}
+
+
+export { searchUsersInTalkTown, sendRequest, acceptRequest };
