@@ -1,35 +1,35 @@
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema({
-    sender : {
+    sender: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
     },
 
-    chat :{
+    chat: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Chat",
         required: true,
     },
 
-    content : {
+    content: {
         type: String,
     },
 
-    attachments : [
+    attachments: [
         {
             public_id: {
-            type: String,
-            required: true,
+                type: String,
+                default: ""
             },
-            url :{
-            type: String,
-            required: true,
-            },
+            url: {
+                type: String,
+                default: "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+            }
         }
     ],
-}, {timestamps: true});
+}, { timestamps: true });
 
 
 
