@@ -4,7 +4,7 @@ import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, 
-sendAttachment, getChatDetails, renameChat, deleteChat } from "../controllers/chat.controller.js";
+sendAttachment, getChatDetails, renameChat, deleteChat, getMessage } from "../controllers/chat.controller.js";
 
 import { createGroupChatValidation, addMembersValidation } from "../validators/chat.Validators.js";
 import { validate } from "../middlewares/validator.middleware.js";
@@ -27,6 +27,7 @@ chatRouter.delete("/exit-group/:id", verifyJWT, exitGroup);
 
 chatRouter.post("/send-attachment", verifyJWT, upload.array("files", 5),  sendAttachment);
 
+chatRouter.get("/message/:id", verifyJWT, getMessage);
 //get chat -> details, rename, delete
 chatRouter.route("/:id")
 .get(getChatDetails)

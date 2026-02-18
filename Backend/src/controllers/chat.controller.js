@@ -541,7 +541,55 @@ const deleteChat = async (req, res) => {
     }
 }
 
+const getMessage = async (req, res) => {
+    //we know that message belongs to a chat
+    //1. get chatID first 
+    const chatId = req.params.id;
+
+    //localhost:3000/messages/chatId?page=2
+    const {page = 1} = req.query;
+
+    const msg_limit_per_page = 20;
+
+    const skip = (page-1) * msg_limit_per_page;
+
+    try {
+        //2. get all the messages of this particular page , and totalMessageCount of this particular chat 
+        const [messages, totalMessageCount] = await Promise.all([
+            //message dhundh kr lao
+            Message.find({chat: chatId})
+            .sort({createdAt: -1})//get newer message first
+            .skip(skip)
+            .limit(msg_limit_per_page)
+            .populate("sender", "fullname")
+            .lean(),
+    
+            // Total kitne messages hain?
+            Message.countDocuments({chat: chatId}),
+        ])
+    
+        // 3. Total Pages calculate karna
+        const totalPages = Math.ceil(totalMessageCount/msg_limit_per_page);
+    
+     // 4. Response bhejna
+            return res.status(200).json({
+                success: true,
+                // Hum .reverse() isliye kar rahe hain taaki frontend par 
+                // messages sahi order (purane se naye) mein dikhein
+                messages: messages.reverse(), 
+                totalPages,
+            });  
+    
+    } catch (error) {
+         console.error("getMessage Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: " pagination error in getMessage "
+        });
+    }
+}
+
 export {
     createGroup, getMyChats, getMyGroups, addMembers, removeMember,
-    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat
+    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat,getMessage
 };
