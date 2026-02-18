@@ -159,5 +159,47 @@ const acceptRequest = async (req, res) => {
     }
 }
 
+const notification = async (req, res) => {
 
-export { searchUsersInTalkTown, sendRequest, acceptRequest };
+    try {
+
+        const allrequest = await Request.find({receiver: req.user._id})
+        .populate("sender", "fullname avatar")
+
+
+        if(!allrequest){
+            return res.status(404).json({
+            success: false,
+            message: "Request not found"
+            });
+        }
+
+        //transforme all request
+        const transformed_allrequest = allrequest.map(({_id, sender}) => ({
+            _id,
+
+            sender : {
+                _id : sender._id,
+                fullname : sender.fullname,
+                avatar : sender.avatar.url
+
+            }
+        }))
+
+        return res.status(200).json({
+            success: true,
+            message: "notification received successfully",
+            notification : transformed_allrequest
+        });
+
+
+    } catch (error) {
+        console.error("notification error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error while receiving notification"
+        });
+    }
+}
+
+export { searchUsersInTalkTown, sendRequest, acceptRequest,  notification};
