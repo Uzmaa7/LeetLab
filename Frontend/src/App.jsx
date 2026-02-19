@@ -10,7 +10,9 @@ import { Loader } from "lucide-react";
 import Layout from "./layout/Layout";
 import AddProblem from "./pages/AddProblem.jsx";
 import AdminRoute from "./components/AdminRoutes.jsx";
-
+import ProblemPage from "./pages/ProblemPage.jsx";
+import Signup from "./pages/SignUpPage.jsx";
+import LandingPage from "./components/LandingPage.jsx";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -32,26 +34,33 @@ const App = () => {
       <Toaster />
       <Routes>
         {/* Layout ko Parent Route banayein */}
-        <Route path="/" element={<Layout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signup" element={<Signup />} />
+        {/* <Route path="/" element={<Layout />}> */}
 
           {/* Yeh saare routes ab Layout ke Outlet mein dikhenge */}
-          <Route
+          {/* <Route
             index
             element={authUser ? <HomePage /> : <Navigate to="/login" />}
-          />
+          /> */}
 
           {/* Agar aap aur pages add karte hain (like Profile), wo bhi yahan aayenge */}
           {/* <Route path="profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} /> */}
 
-        </Route>
+        {/* </Route> */}
 
         {/* Login aur Signup ko Layout se bahar rakh sakte hain agar wahan Navbar nahi chahiye */}
-        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
-        <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
+        {/* <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} /> */}
 
-        <Route element = {<AdminRoute/>} >
+        {/* <Route path="/register" element={!authUser ? <Signup /> : <Navigate to="/" />} /> */}
+
+
+        {/* <Route path="/problem/:id"  element={authUser ? <ProblemPage/> : <Navigate to = "/login"/>}/> */}
+
+
+        {/* <Route element = {<AdminRoute/>} >
           <Route path="add-problem" element = {authUser ? <AddProblem/> : <Navigate to = "/" />} />
-        </Route>
+        </Route> */}
 
 
 

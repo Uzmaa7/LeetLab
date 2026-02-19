@@ -1,93 +1,54 @@
-import React from "react"
-import { User, Code, LogOut } from "lucide-react";
-import { useAuthStore } from "../store/useAuthStore";
-import { Link } from "react-router-dom";
-import LogoutButton from "./LogoutButton";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Code2 } from 'lucide-react';
 
-
-
-const Navbar = ()=>{
-
-    const {authUser} = useAuthStore()
-
-    console.log("AUTH_USER",authUser)
+const Navbar = () => {
+    const navigate = useNavigate();
 
     return (
-     <nav className="sticky top-0 z-50 w-full py-5">
-      <div className="flex w-full justify-between mx-auto max-w-4xl bg-black/15 shadow-lg shadow-neutral-600/5 backdrop-blur-lg border border-gray-200/10 p-4 rounded-2xl">
-        {/* Logo Section */}
-        <Link to="/" className="flex items-center gap-3 cursor-pointer">
-          <img src="/leetlab.svg" className="h-18 w-18 bg-primary/20 text-primary border-none px-2 py-2 rounded-full" />
-          <span className="text-lg md:text-2xl font-bold tracking-tight text-white hidden md:block">
-          Leetlab 
-          </span>
-        </Link>
+        <nav className="fixed top-0 w-full z-[100] px-12 py-8 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5">
+            {/* LOGO: White Highlight with Orange Shimmer */}
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+                <div className="p-2 bg-white/10 border border-white/20 rounded-lg group-hover:border-orange-500/50 transition-all">
+                    <Code2 size={22} className="text-white" />
+                </div>
+                
+                {/* 70% White and then Orange/Amber wave */}
+                <span className="text-2xl font-black tracking-tighter italic bg-gradient-to-r from-white via-white via-white to-[#ff8c00] bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer">
+                    LEETLAB
+                </span>
+            </div>
 
-        {/* User Profile and Dropdown */}
-        <div className="flex items-center gap-8">
-          <div className="dropdown dropdown-end">
-            <label tabIndex={0} className="btn btn-ghost btn-circle avatar flex flex-row ">
-              <div className="w-10 rounded-full ">
-                <img
-                  src={
-                    authUser?.image ||
-                    "https://avatar.iran.liara.run/public/boy"
-                  }
-                  alt="User Avatar"
-                  className="object-cover"
-                />
-              </div>
-           
-            </label>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 space-y-3"
-            >
-              {/* Admin Option */}
-             
+            {/* NAV LINKS: High Contrast + Animated Underline */}
+            <div className="hidden md:flex items-center gap-10 text-[11px] font-black uppercase tracking-[3px]">
+                {['Problems', 'Contests', 'TalkTown', 'Pricing'].map((item) => (
+                    <a 
+                        key={item}
+                        href="#" 
+                        className="nav-link text-white hover:text-white transition-colors opacity-100"
+                    >
+                        {item}
+                    </a>
+                ))}
+            </div>
 
-              {/* Common Options */}
-              <li>
-                <p className="text-base font-semibold">
-                 
-                  {authUser?.name}
-
-                </p>
-                <hr className="border-gray-200/10" />
-              </li>
-              <li>
-                <Link
-                  to="/profile"
-                  className="hover:bg-primary hover:text-white text-base font-semibold"
+            {/* AUTH BUTTONS */}
+            <div className="flex items-center gap-8">
+                <button 
+                    onClick={() => navigate('/login')}
+                    className="text-xs font-black tracking-widest text-white hover:text-orange-400 transition-colors"
                 >
-                  <User className="w-4 h-4 mr-2" />
-                  My Profile
-                </Link>
-              </li>
-              {authUser?.role === "ADMIN" && (
-                <li>
-                  <Link
-                    to="/add-problem"
-                    className="hover:bg-primary hover:text-white text-base font-semibold"
-                  >
-                    <Code className="w-4 h-4 mr-1" />
-                    Add Problem
-                  </Link>
-                </li>
-              )}
-              <li>
-                <LogoutButton className="hover:bg-primary hover:text-white">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </LogoutButton>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </nav>
-    )
-}
-
+                    LOG IN
+                </button>
+                <button 
+                    onClick={() => navigate('/signup')}
+                    className="bg-white text-black px-8 py-3 rounded-full text-[10px] font-black uppercase hover:bg-[#ff8c00] hover:text-white transition-all shadow-xl active:scale-95"
+                >
+                    Get Started
+                </button>
+            </div>
+        </nav>
+    );
+};
 
 export default Navbar;

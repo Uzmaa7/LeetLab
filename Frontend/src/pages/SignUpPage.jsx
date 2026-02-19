@@ -1,187 +1,156 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Ye import karein
+import { User, Mail, Lock, AtSign, ArrowRight, Code2, Terminal, Trophy, Users } from 'lucide-react';
+import { gsap } from 'gsap';
+import API from '../services/auth.service.js';
+import toast from 'react-hot-toast';
+import Background3D from "../components/Background3D";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
-import { z } from "zod";
+const Signup = () => {
+    const navigate = useNavigate();
+    const formRef = useRef(null);
+    const infoRef = useRef(null);
+    const [loading, setLoading] = useState(false);
+    
+    
+    // Exactly as per your Register Controller
+    const [formData, setFormData] = useState({
+        username: "",
+        fullname: "",
+        email: "",
+        password: ""
+    });
 
-import AuthImagePattern from '../components/AuthImagePattern';
-// import { useAuthStore } from "../store/useAuthStore";
+    useEffect(() => {
+        const tl = gsap.timeline();
+        tl.fromTo(infoRef.current, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.8 })
+          .fromTo(formRef.current, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.8 }, "-=0.5");
+    }, []);
 
-import { Code, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
-import { useAuthStore } from "../store/useAuthStore";
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-
-
-
-
-const SignUpSchema = z.object({
-    email: z.string().email("Enter a valid email"),
-    password: z.string().min(8, "Password must be atleast of 8 characters"),
-    fullname: z.string().min(3, "Name must be atleast 3 character")
-})
-
-function SignUpPage() {
-
-    const { register, handleSubmit, formState: { errors }, } = useForm({ resolver: zodResolver(SignUpSchema) });
-    const [showPassword, setShowPassword] = useState(false);
-
-    const { signup, isSigninUp } = useAuthStore();
-
-
-    const create = async (data) => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
         try {
-            await signup(data)
-            console.log("signup data", data)
+            // This hits: authRouter.post("/register", ...)
+            const res = await API.post("/auth/register", formData);
+            toast.success(res.data.message || "User created successfully");
+
+            // 3. Redirect Logic: 2 second baad Home page par
+                setTimeout(() => {
+                    navigate("/"); // Ya jo bhi aapka home route hai (e.g., "/home")
+                }, 2000);
+
+                
         } catch (error) {
-            console.error("SignUp failed:", error);
+            toast.error(error.response?.data?.message || "Error creating user");
+        } finally {
+            setLoading(false);
         }
-
-    }
-
-
+    };
 
     return (
-        <div className='h-screen grid lg:grid-cols-2'>
-            <div className="flex flex-col justify-center items-center p-6 sm:p-12">
-                <div className="w-full max-w-md space-y-8">
+        <div className="h-screen w-full relative overflow-hidden bg-black font-sans text-white">
+            <Background3D />
 
-                    {/* Logo */}
-                    <div className="text-center mb-8">
-                        <div className="flex flex-col items-center gap-2 group">
-                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                <Code className="w-6 h-6 text-primary" />
+            <div className="relative z-10 h-full w-full flex">
+                
+                {/* LEFT SIDE: LeetLab Info */}
+                <div ref={infoRef} className="hidden lg:flex flex-col justify-center items-start w-[45%] p-12 bg-black/10 backdrop-blur-sm border-r border-white/5 h-full">
+                    <div className="flex items-center gap-3 mb-10">
+                        <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-600/30">
+                            <Code2 size={30} className="text-white" />
+                        </div>
+                        <span className="text-2xl font-black tracking-tight italic text-blue-500">LEETLAB</span>
+                    </div>
+                    
+                    <h1 className="text-5xl font-extrabold leading-[1.1] mb-6 tracking-tight">
+                        Code. Compete. <br />
+                        <span className="text-blue-500 text-6xl font-black">Connect.</span>
+                    </h1>
+                    
+                    <div className="space-y-8 mt-4">
+                        <div className="flex items-center gap-5">
+                            <div className="bg-blue-600/20 p-3 rounded-xl border border-blue-500/20">
+                                <Terminal size={22} className="text-blue-400" />
                             </div>
-                            <h1 className="text-2xl font-bold mt-2">Welcome </h1>
-                            <p className="text-base-content/60">Sign Up to your account</p>
+                            <div>
+                                <h4 className="font-bold text-gray-200 uppercase text-xs tracking-widest">Interactive Coding</h4>
+                                <p className="text-xs text-gray-500">Sharpen your skills in our secure lab.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-5">
+                            <div className="bg-purple-600/20 p-3 rounded-xl border border-purple-500/20">
+                                <Trophy size={22} className="text-purple-400" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-200 uppercase text-xs tracking-widest">Global Contests</h4>
+                                <p className="text-xs text-gray-500">Compete with the best coders worldwide.</p>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-
-
-                    {/* //////////////////////////////////////////////////////////////////// */}
-                    {/* form */}
-                    <form onSubmit={handleSubmit(create)} className="space-y-6">
-
-                        {/* fullname */}
-                        <div className="form-control">
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Code className="h-5 w-5 text-base-content/40" />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Enter your name"
-                                    {...register("fullname")}
-                                    className={`input input-bordered w-full pl-10 ${errors.name ? "input-error" : ""
-                                        }`}
-                                />
-
-                            </div>
-                            {errors.name && (
-                                <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                            )}
+                {/* RIGHT SIDE: Full Signup Form */}
+                <div className="flex-1 flex items-center justify-center p-6">
+                    <div ref={formRef} className="w-full max-w-[420px] bg-white/[0.03] backdrop-blur-2xl p-10 rounded-[2.5rem] border border-white/10 shadow-2xl">
+                        <div className="mb-8">
+                            <h3 className="text-3xl font-bold tracking-tight">Create Account</h3>
+                            <p className="text-gray-500 text-sm mt-2">Enter your details to join LeetLab.</p>
                         </div>
 
-
-                        {/* email */}
-                        <div className="form-control">
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-base-content/40" />
-                                </div>
-                                <input
-                                    type="email"
-                                    placeholder="Enter your email"
-                                    {...register("email")}
-                                    className={`input input-bordered w-full pl-10 ${errors.email ? "input-error" : ""
-                                        }`}
-                                />
-
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Full Name */}
+                            <div className="relative group">
+                                <User className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                <input type="text" name="fullname" placeholder="Full Name" onChange={handleChange} value={formData.fullname} required
+                                    className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
                             </div>
-                            {errors.email && (
-                                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                            )}
+
+                            {/* Username */}
+                            <div className="relative group">
+                                <AtSign className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                <input type="text" name="username" placeholder="Username" onChange={handleChange} value={formData.username} required
+                                    className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
+                            </div>
+
+                            {/* Email */}
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                <input type="email" name="email" placeholder="Email Address" onChange={handleChange} value={formData.email} required
+                                    className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
+                            </div>
+
+                            {/* Password */}
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                <input type="password" name="password" placeholder="Password" onChange={handleChange} value={formData.password} required
+                                    className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
+                            </div>
+
+                            <button disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-4">
+                                {loading ? "Registering..." : "Signup"} <ArrowRight size={18} />
+                            </button>
+                        </form>
+
+                        <div className="my-6 flex items-center gap-3">
+                            <div className="h-[1px] bg-white/5 flex-1"></div>
+                            <span className="text-[10px] text-gray-600 font-bold uppercase tracking-[2px]">OR</span>
+                            <div className="h-[1px] bg-white/5 flex-1"></div>
                         </div>
 
-
-
-                        {/* password */}
-
-                        <div className="form-control">
-
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-base-content/40" />
-                                </div>
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
-                                    {...register("password")}
-                                    className={`input input-bordered w-full pl-10 ${errors.password ? "input-error" : ""
-                                        }`}
-                                />
-
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    {showPassword ?
-                                        (<EyeOff className="h-5 w-5 text-base-content/40" />)
-                                        :
-                                        (<Eye className="h-5 w-5 text-base-content/40" />)
-                                    }
-                                </button>
-
-                            </div>
-                            {errors.password && (
-                                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-                            )}
-                        </div>
-
-                        {/* submit button --*/}
-                        <button
-                            type="submit"
-                            className="btn btn-primary w-full "
-                            disabled={isSigninUp}
-
-                        >
-
-                            {isSigninUp ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    Loading...
-                                </>
-                            ) : (
-                                "Sign in"
-                            )}
-
+                        <button className="w-full bg-white/5 border border-white/10 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-3 text-sm hover:bg-white/10 transition-all">
+                            <img src="https://www.svgrepo.com/show/355037/google.svg" className="w-4" alt="google" />
+                            Signup with Google
                         </button>
-                    </form>
-
-
-
-                    {/* Footer */}
-                    <div className="text-center">
-                        <p className="text-base-content/60">
-                            Already have an account?{" "}
-                            <Link to="/login" className="link link-primary">
-                                Sign in
-                            </Link>
-                        </p>
                     </div>
                 </div>
             </div>
-
-            {/* auth */}
-            <AuthImagePattern
-                title={"Welcome to our platform!"}
-                subtitle={
-                    "Sign up to access our platform and start using our services."
-                }
-            />
-            {/*  //////////////////////////////////////////////////////////////////         */}
         </div>
-    )
+    );
+};
 
-}
-
-export default SignUpPage;
+export default Signup;
