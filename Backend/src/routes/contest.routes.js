@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createManualContest, endContestResult, getAllContest,  generateWeeklyContest} from "../controllers/contest.controller.js";
+import { createManualContest, endContestResult, getAllContest,  scheduleWeeklyContests} from "../controllers/contest.controller.js";
 
 
 const contestRouter = express.Router();
@@ -16,7 +16,7 @@ contestRouter.post("/end/:contestId", verifyJWT, endContestResult);
 contestRouter.get("/all-contest", verifyJWT, getAllContest);
 
 // 4. Random 4 questions wala contest (Weekly feature)
-contestRouter.post("/generate-weekly", verifyJWT, generateWeeklyContest);
+contestRouter.post("/generate-weekly", verifyJWT, scheduleWeeklyContests);
 
 
 export default contestRouter;

@@ -34,6 +34,7 @@ const contestSchema = new mongoose.Schema({
     },
     results: [{
         problemLink: String,
+        titleSlug: String,
         isSolved: {type:Boolean, default: false},
         solvedAt: Date
     }]

@@ -1,6 +1,8 @@
 import Contest from "../models/contest.model.js";
-import User from "../models/user.model";
-import { fetchLeetCodeSubmissions } from "../utils/leetcode";
+import User from "../models/user.model.js";
+import { fetchLeetCodeSubmissions } from "../utils/leetcode.js";
+import cron from "node-cron";
+import { fetchAllSolvedProblems } from "./leetcode.js";
 
 const createManualContest = async (req, res) => {
     const { title, problemLinks, duration } = req.body;
@@ -130,10 +132,52 @@ const getAllContest = async (req, res) => {
 
 }
 
-const generateWeeklyContest = async (req, res) => {
-
-}
 
 
+const scheduleWeeklyContests = () => {
+    // Har Sunday subah 8:00 AM par chalega
+    cron.schedule("0 8 * * 0", async () => {
+        console.log("Sunday 8 AM: Generating weekly contests for all users...");
+        
+        try {
+            const users = await User.find({ leetcodeUsername: { $exists: true } });
 
-export { createManualContest, endContestResult, getAllContest, generateWeeklyContest };
+            for (const user of users) {
+                const allProblems = await fetchAllSolvedProblems(user.leetcodeUsername);
+
+                if (allProblems && allProblems.length >= 4) {
+                    const shuffled = allProblems.sort(() => 0.5 - Math.random());
+                    const selectedProblems = shuffled.slice(0, 4).map(p => ({
+                        title: p.title,
+                        titleSlug: p.titleSlug,
+                        link: `https://leetcode.com/problems/${p.titleSlug}/`,
+                        difficulty: "Medium"
+                    }));
+
+                    const duration = 60; // 1 hour
+                    const startTime = new Date();
+                    const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+
+                    await Contest.create({
+                        title: `Sunday Morning Blast - ${new Date().toLocaleDateString()}`,
+                        creator: user._id,
+                        problems: selectedProblems,
+                        duration,
+                        startTime,
+                        endTime,
+                        status: "active"
+                    });
+                    console.log(`✅ Contest created for user: ${user.leetcodeUsername}`);
+                }
+            }
+        } catch (error) {
+            console.error("Cron Job Error:", error);
+        }
+    });
+};
+
+
+
+
+
+export { createManualContest, endContestResult, getAllContest, scheduleWeeklyContests };
