@@ -103,8 +103,19 @@ const userSchema = new mongoose.Schema({
     lists: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "List"
-    }]
+    }],
 
+    // ====contest=====
+    leetcodeUsername : {
+        type : String,
+        unique: true,
+        sparse: true
+    },
+
+    solvedLeetcodeProblems : [{
+        type: String
+    }]
+    // ====contest=====
 
 
 }, {timestamps:true});
