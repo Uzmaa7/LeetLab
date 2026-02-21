@@ -4,6 +4,8 @@ import { fetchLeetCodeSubmissions } from "../utils/leetcode.js";
 import cron from "node-cron";
 import { fetchAllSolvedProblems } from "./leetcode.js";
 
+
+
 const createManualContest = async (req, res) => {
     const { title, problemLinks, duration } = req.body;
 
@@ -129,10 +131,20 @@ const endContestResult = async (req, res) => {
 }
 
 const getAllContest = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+       const allContest =  await Contest.find({createdBy :  userId}).sort({createdAt: -1});
 
+       res.status(200).json({
+        status:true,
+        count : allContest.length,
+        allContest,
+       })
+    } catch (error) {
+        res.status(500).json({ message: "getAllContest error " });
+    }
 }
-
-
 
 const scheduleWeeklyContests = () => {
     // Har Sunday subah 8:00 AM par chalega
