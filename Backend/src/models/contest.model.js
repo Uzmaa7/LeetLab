@@ -12,6 +12,7 @@ const contestSchema = new mongoose.Schema({
     },
     problems: [{
         title: {type : String},
+        titleSlug: { type: String, required: true },
         link: {type: String, required : true},
         difficulty: {type: String},
     }],
@@ -19,7 +20,7 @@ const contestSchema = new mongoose.Schema({
         type: Number,
         default: 60,
     },
-    start: {
+    startTime: {
         type: Date,
         default: Date.now,
     },
