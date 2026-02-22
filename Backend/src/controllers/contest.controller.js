@@ -7,36 +7,80 @@ import { fetchAllSolvedProblems } from "./leetcode.js";
 
 
 const createManualContest = async (req, res) => {
-    const { title, problemLinks, duration } = req.body;
-
-    if (!problemLinks || !Array.isArray(problemLinks) || problemLinks.length === 0) {
-        return res.status(400).json({ message: "Please provide problem links" });
-    }
-
-    // Helper: Link se 'title-slug' nikalne ke liye
-    // Example: https://leetcode.com/problems/two-sum/ -> two-sum
-    const extractSlug = (link) => {
-        const parts = link.split("/").filter(word => word.length > 0);
-        return parts[parts.indexOf("problems") + 1];
-    }
-
-    const problemData = problemLinks.map((link) => {
-        return {
-            link: link,
-            titleSlug: extractSlug(link),
-            title: extractSlug(link).replace(/-/g, ' ') // Temporary title formatting
-        }
-    })
-
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
-
     try {
+        // 1. 
+        const user = await User.findById(req.user._id);
+        if (!user || !user.leetcodeUsername) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide leetcode username."
+            });
+        }
+
+
+        const { title, problemLinks, duration, questionCount } = req.body;
+
+        // 2. all fields validation
+        if (!title || !problemLinks || !duration || !questionCount) {
+            return res.status(400).json({ message: "All fields (title, links, duration, count) are required" });
+        }
+
+
+        if (!problemLinks || !Array.isArray(problemLinks) || problemLinks.length === 0) {
+            return res.status(400).json({ message: "Please provide problem links" });
+        }
+
+
+
+
+        // 3. Question count validation (2 to 4)
+        if (questionCount < 2 || questionCount > 4) {
+            return res.status(400).json({ message: "You can only choose between 2 to 4 questions." });
+        }
+
+        // 4. Links count match
+        if (problemLinks.length !== Number(questionCount)) {
+            return res.status(400).json({
+                message: `Please provide exactly ${questionCount} problem links as selected.`
+            });
+        }
+
+
+        // 5. LeetCode link check
+        const isLeetcodeLink = (link) => link.includes("leetcode.com/problems/");
+        for (const link of problemLinks) {
+            if (!isLeetcodeLink(link)) {
+                return res.status(400).json({ message: "Only leetcode links are allowed!" });
+            }
+        }
+
+
+        // Helper: Link se 'title-slug' nikalne ke liye
+        // Example: https://leetcode.com/problems/two-sum/ -> two-sum
+        const extractSlug = (link) => {
+            const parts = link.split("/").filter(word => word.length > 0);
+            const problemIndex = parts.indexOf("problems");
+            return problemIndex !== -1 ? parts[problemIndex + 1] : "invalid-link"
+        }
+
+        const problemData = problemLinks.map((link) => {
+            return {
+                link: link,
+                titleSlug: extractSlug(link),
+                title: extractSlug(link).replace(/-/g, ' ') // Temporary title formatting
+            }
+        })
+
+        const startTime = new Date();
+        const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
+
+        // 6. Database Entry
         const newContest = await Contest.create({
             title,
             createdBy: req.user._id,
             problems: problemData,
-            duration,
+            duration: Number(duration),
+            questionCount: Number(questionCount),
             startTime,
             endTime,
             status: "active"
@@ -133,14 +177,14 @@ const endContestResult = async (req, res) => {
 const getAllContest = async (req, res) => {
     try {
         const userId = req.user._id;
-        
-       const allContest =  await Contest.find({createdBy :  userId}).sort({createdAt: -1});
 
-       res.status(200).json({
-        status:true,
-        count : allContest.length,
-        allContest,
-       })
+        const allContest = await Contest.find({ createdBy: userId }).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            status: true,
+            count: allContest.length,
+            allContest,
+        })
     } catch (error) {
         res.status(500).json({ message: "getAllContest error " });
     }
@@ -150,7 +194,7 @@ const scheduleWeeklyContests = () => {
     // Har Sunday subah 8:00 AM par chalega
     cron.schedule("0 8 * * 0", async () => {
         console.log("Sunday 8 AM: Generating weekly contests for all users...");
-        
+
         try {
             const users = await User.find({ leetcodeUsername: { $exists: true } });
 
