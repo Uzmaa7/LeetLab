@@ -189,13 +189,13 @@ const getAllContest = async (req, res) => {
         // . Fetch Data with Pagination
 
         const [allContest, totalContest] = await Promise.all([
-        Contest.find({ createdBy: userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(contest_limit_per_page)
-        .lean(),
+            Contest.find({ createdBy: userId })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(contest_limit_per_page)
+                .lean(),
 
-        Contest.countDocuments({createdBy: userId})
+            Contest.countDocuments({ createdBy: userId })
         ])
 
         // 4. SMART STATS: Performance Overview
@@ -214,7 +214,7 @@ const getAllContest = async (req, res) => {
             },
 
             stats: {
-                totalCompleted: completedContestCount.length,
+                totalCompleted: completedContestCount,
             },
 
             // 3. Actual Data
@@ -227,48 +227,71 @@ const getAllContest = async (req, res) => {
 }
 
 const scheduleWeeklyContests = () => {
-    // Har Sunday subah 8:00 AM par chalega
+    // starts every sunday morning at 8:00 AM
     cron.schedule("0 8 * * 0", async () => {
         console.log("Sunday 8 AM: Generating weekly contests for all users...");
 
         try {
-            const users = await User.find({ leetcodeUsername: { $exists: true } });
+
+            // Fetch only users who have linked their LeetCode usernames
+            const users = await User.find({ leetcodeUsername: { $exists: true, $ne: "" } }).lean();
+
+            if (users.length === 0) {
+                console.log("No users found with LeetCode usernames.");
+                return;
+            }
 
             for (const user of users) {
-                const allProblems = await fetchAllSolvedProblems(user.leetcodeUsername);
+                // 1. Fetch solved problems
+                // Isolated try-catch per user ensures one failure doesn't stop the entire batch
+                try {
+                    const allProblems = await fetchAllSolvedProblems(user.leetcodeUsername);
 
-                if (allProblems && allProblems.length >= 4) {
-                    const shuffled = allProblems.sort(() => 0.5 - Math.random());
-                    const selectedProblems = shuffled.slice(0, 4).map(p => ({
-                        title: p.title,
-                        titleSlug: p.titleSlug,
-                        link: `https://leetcode.com/problems/${p.titleSlug}/`,
-                        difficulty: "Medium"
-                    }));
+                    // Skip users who don't have enough solved problems to generate a revision contest
+                    if (!allProblems || allProblems.length < 4) {
+                        console.log(`Skipping ${user.leetcodeUsername}: Not enough problems.`);
+                        continue;
+                    }
 
-                    const duration = 60; // 1 hour
-                    const startTime = new Date();
-                    const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+                    // Select 4 random problems from the user's solved list
+                    if (allProblems && allProblems.length >= 4) {
+                        const shuffled = allProblems.sort(() => 0.5 - Math.random());
+                        const selectedProblems = shuffled.slice(0, 4).map(p => ({
+                            title: p.title,
+                            titleSlug: p.titleSlug,
+                            link: `https://leetcode.com/problems/${p.titleSlug}/`,
+                            difficulty: "Medium"
+                        }));
 
-                    await Contest.create({
-                        title: `Sunday Morning Blast - ${new Date().toLocaleDateString()}`,
-                        creator: user._id,
-                        problems: selectedProblems,
-                        duration,
-                        startTime,
-                        endTime,
-                        status: "active"
-                    });
-                    console.log(`✅ Contest created for user: ${user.leetcodeUsername}`);
+
+                        // Define contest timeline (starts now, ends in 1 hour)
+                        const duration = 60; // 1 hour
+                        const startTime = new Date();
+                        const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+
+                        // Persist the new contest to the database
+                        await Contest.create({
+                            title: `Sunday Morning Blast - ${new Date().toLocaleDateString('en-IN')}`,
+                            createdBy: user._id,
+                            problems: selectedProblems,
+                            duration,
+                            startTime,
+                            endTime,
+                            status: "active"
+                        });
+                        console.log(`✅ Contest created for user: ${user.leetcodeUsername}`);
+
+                    }
+                } catch (userError) {
+                    console.error(`Error creating contest for ${user.leetcodeUsername}:`, userError.message);
                 }
-            }
-        } catch (error) {
-            console.error("Cron Job Error:", error);
+            };
         }
-    });
-};
-
-
+        catch (globalError) {
+            console.error(" Critical Cron Job Error:", globalError);
+        }
+    })
+}
 
 
 
