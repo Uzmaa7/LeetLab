@@ -175,18 +175,54 @@ const endContestResult = async (req, res) => {
 }
 
 const getAllContest = async (req, res) => {
-    try {
-        const userId = req.user._id;
 
-        const allContest = await Contest.find({ createdBy: userId }).sort({ createdAt: -1 });
+    const userId = req.user._id;
+
+    const { page = 1 } = req.query;
+
+    const contest_limit_per_page = 5;
+
+    const skip = (page - 1) * contest_limit_per_page;
+
+    try {
+
+        // . Fetch Data with Pagination
+
+        const [allContest, totalContest] = await Promise.all([
+        Contest.find({ createdBy: userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(contest_limit_per_page)
+        .lean(),
+
+        Contest.countDocuments({createdBy: userId})
+        ])
+
+        // 4. SMART STATS: Performance Overview
+        // Hum check karenge ki user ne total kitne contests "complete" kiye hain
+        const completedContestCount = await Contest.countDocuments({ createdBy: userId, status: "completed" });
 
         res.status(200).json({
             status: true,
-            count: allContest.length,
-            allContest,
+            message: "Contests fetched successfully",
+            // 1. Pagination Data (Frontend ke pagination buttons ke liye)
+            pagination: {
+                totalContest,
+                currentPage: Number(page),
+                totalPages: Math.ceil(totalContest / contest_limit_per_page),
+                limit: contest_limit_per_page
+            },
+
+            stats: {
+                totalCompleted: completedContestCount.length,
+            },
+
+            // 3. Actual Data
+            allContest
         })
     } catch (error) {
-        res.status(500).json({ message: "getAllContest error " });
+        console.error("getAllContest Error:", error);
+        res.status(500).json({ message: "Failed to fetch contests" });
     }
 }
 
