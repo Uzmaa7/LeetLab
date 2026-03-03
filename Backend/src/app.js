@@ -13,7 +13,7 @@ import submissionRouter from "./routes/submission.routes.js";
 import listRouter from "./routes/list.routes.js";
 import chatRouter from "./routes/chat.routes.js";
 import friendRouter from "./routes/friend.routes.js";
-import contestRouter from "./routes/contest.routes.js";
+import questionRouter from "./routes/question.routes.js";
 
 dotenv.config({
     path: "./.env"
@@ -43,7 +43,10 @@ app.use("/api/v1/problems", problemRouter);
 app.use("/api/v1/execute-code", executionRouter);
 app.use("/api/v1/submission", submissionRouter);
 app.use("/api/v1/list", listRouter);
-app.use("/api/v1/contest", contestRouter);
+
+
+// ======= Contest =================================
+app.use("/api/v1/questions", questionRouter);
 
 //==== TalkTown =========================================
 app.use("/api/v1/chat", chatRouter);
