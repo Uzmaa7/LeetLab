@@ -1,0 +1,35 @@
+import mongoose from "mongoose";
+
+const collectionQuestionSchema = new mongoose.Schema({
+
+    collectionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Collection",
+        required: true,
+        index: true,
+    },
+
+    questionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Question",
+        required: true,
+        index: true,
+    },
+
+    order: {
+        type: Number,
+        default: 0,
+    },
+
+    addedAt: {
+        type: Date,
+        default: Date.now,
+    },
+},
+    { timestamps: false });
+
+collectionQuestionSchema.index({ collection: 1, question: 1 }, { unique: true });
+
+const CollectionQuestion = mongoose.model("CollectionQuestion", collectionQuestionSchema);
+
+export default CollectionQuestion;
