@@ -1,4 +1,4 @@
-import { body, query } from "express-validator";
+import { body, query , param} from "express-validator";
 
 const uploadQuestionValidator = () => {
     return [
@@ -66,4 +66,12 @@ const getAllQuestionsValidator = () => {
     ]
 }
 
-export { uploadQuestionValidator, getAllQuestionsValidator };
+const getQuestionByIdValidator = () => {
+    return[
+        param("questionId")
+            .isMongoId()
+            .withMessage("Invalid Question ID")
+    ]
+}
+
+export { uploadQuestionValidator, getAllQuestionsValidator, getQuestionByIdValidator };

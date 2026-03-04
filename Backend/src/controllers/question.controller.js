@@ -1,6 +1,6 @@
+import { isValidObjectId } from "mongoose";
 import Question from "../models/question.model.js";
 import { uploadQuestionService } from "../services/question.service.js";
-import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const uploadQuestion = asyncHandler(async(req, res) => {
@@ -77,6 +77,27 @@ const getAllQuestions = asyncHandler(async(req, res) => {
 
 })
 
-export {uploadQuestion, getAllQuestions};
+
+const getQuestionById = asyncHandler(async(req, res) => {
+
+    const {questionId} = req.params;
+
+    const userId = req.user._id;
+
+    const question = await Question.findOne({
+        _id : questionId,
+        addedBy : userId,
+        isDeleted : false
+    })
+
+    if (!question) {
+        throw new ApiError(404, "Question not found");
+    }
+
+    return res.status(200).json(new ApiResponse(200, question, "Question fetched"))
+
+})
+
+export {uploadQuestion, getAllQuestions, getQuestionById};
 
 
