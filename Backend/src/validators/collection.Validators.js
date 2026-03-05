@@ -23,4 +23,11 @@ const createCollectionValidator = () => {
     ];
 };
 
-export { createCollectionValidator };
+const idValidator = () => {
+    return[
+        param("collectionId")
+            .isMongoId()
+            .withMessage("Invalid collection ID")
+    ]
+}
+export { createCollectionValidator, idValidator };
