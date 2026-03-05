@@ -1,6 +1,6 @@
 import express from "express";
-import { createCollection, getAllCollections } from "../controllers/collection.controller.js";
-import { createCollectionValidator } from "../validators/collection.Validators.js";
+import { createCollection, getAllCollections, getCollectionById } from "../controllers/collection.controller.js";
+import { createCollectionValidator, idValidator } from "../validators/collection.Validators.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
 
@@ -14,6 +14,7 @@ collectionRouter.post("/", verifyJWT, createCollectionValidator(), validate,  cr
 collectionRouter.get("/", verifyJWT, getAllCollections);
 
 //get a particular collection
+collectionRouter.get("/:collectionId", verifyJWT, idValidator(), validate, getCollectionById);
 
 //delete a collection
 

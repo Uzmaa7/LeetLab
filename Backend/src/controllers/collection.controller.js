@@ -1,6 +1,8 @@
 import { createCollectionService, getAllCollectionsService } from "../services/collection.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiResponse} from "../utils/ApiResponse.js"
+import Collection from "../models/collection.model.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const  createCollection = asyncHandler(async(req, res) => {
 
@@ -45,4 +47,18 @@ const getAllCollections = asyncHandler(async(req, res) => {
 
 })
 
-export {createCollection, getAllCollections}
+const getCollectionById = asyncHandler(async(req, res) => {
+
+    const {collectionId} = req.params;
+
+    const collection = await Collection.findOne({_id : collectionId, createdBy : req.user._id});
+    if(!collection){
+        throw new ApiError(404, "Collection not found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, collection, "Collection fetched"));
+})
+
+export {createCollection, getAllCollections, getCollectionById}

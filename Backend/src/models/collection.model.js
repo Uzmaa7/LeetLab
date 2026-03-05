@@ -44,7 +44,7 @@ const collectionSchema = new mongoose.Schema({
 
 collectionSchema.index({createdBy: 1, nameLower: 1}, {unique: true});
 
-collectionSchema.index({ ownerId: 1, name: 1 });
+collectionSchema.index({ createdBy: 1, name: 1 });
 
 const Collection = mongoose.model("Collection", collectionSchema);
 

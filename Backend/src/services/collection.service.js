@@ -44,7 +44,7 @@ const getAllCollectionsService = async({
             currentPage: page,
         }
     } catch (error) {
-        
+
         console.error("Critical Database Error:", error.message);
 
         throw new ApiError(500, "Unable to fetch collections at the moment. Please try later.");
