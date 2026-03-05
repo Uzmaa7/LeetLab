@@ -3,6 +3,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiResponse} from "../utils/ApiResponse.js"
 import Collection from "../models/collection.model.js";
 import { ApiError } from "../utils/ApiError.js";
+import CollectionQuestion from "../models/collectionQuestion.model.js";
+
+
 
 const  createCollection = asyncHandler(async(req, res) => {
 
@@ -61,4 +64,29 @@ const getCollectionById = asyncHandler(async(req, res) => {
         .json(new ApiResponse(200, collection, "Collection fetched"));
 })
 
-export {createCollection, getAllCollections, getCollectionById}
+const deleteCollection = asyncHandler( async (req, res) => {
+
+    const {collectionId} = req.params
+
+    const collection = await Collection.findOneAndDelete({
+        _id: collectionId,
+        createdBy: req.user._id,
+    });
+
+    if (!collection) {
+        throw new ApiError(404, "Collection not found");
+    }
+
+    // Remove all question links (safe cleanup)
+    await CollectionQuestion.deleteMany({ collectionId: collectionId });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, "Collection deleted"));
+
+})
+
+
+
+
+export {createCollection, getAllCollections, getCollectionById, deleteCollection}
