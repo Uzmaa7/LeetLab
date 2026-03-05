@@ -2,6 +2,8 @@ import { isValidObjectId } from "mongoose";
 import Question from "../models/question.model.js";
 import { uploadQuestionService } from "../services/question.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import CollectionQuestion from "../models/collectionQuestion.model.js";
+import Collection from "../models/collection.model.js";
 
 const uploadQuestion = asyncHandler(async(req, res) => {
 
@@ -98,6 +100,57 @@ const getQuestionById = asyncHandler(async(req, res) => {
 
 })
 
-export {uploadQuestion, getAllQuestions, getQuestionById};
+
+const deleteQuestion = asyncHandler(async (req, res) => {
+    const {questionId} = req.params
+
+    if(!isValidObjectId(questionId)){
+        throw new ApiError(400, "Invalid question ID");
+    }
+
+    const question = await Question.findOneAndUpdate(
+        {
+            _id : questionId,
+            addedBy : req.user._id,
+            isDeleted : false
+        },
+        {
+            $set : {
+                isDeleted : true
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    if (!question) {
+        throw new ApiError(404, "Question not found");
+    }
+
+    // 2. Find all collection links and decrease the count
+    const links = await CollectionQuestion.find({ questionId }).select(
+        "collectionId"
+    );
+
+    if (links.length > 0) {
+        const collectionIds = links.map((l) => l.collectionId);
+
+        // 3. Remove all links
+        await CollectionQuestion.deleteMany({ questionId });
+
+        // 4. Decrease questionsCount safely
+        await Collection.updateMany(
+        { _id: { $in: collectionIds }, questionsCount: { $gt: 0 } },
+        { $inc: { questionsCount: -1 } }
+        );
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, "Question removed", {}));
+})
+
+export {uploadQuestion, getAllQuestions, getQuestionById, deleteQuestion};
 
 

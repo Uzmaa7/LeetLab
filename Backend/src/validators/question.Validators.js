@@ -66,7 +66,7 @@ const getAllQuestionsValidator = () => {
     ]
 }
 
-const getQuestionByIdValidator = () => {
+const idValidator = () => {
     return[
         param("questionId")
             .isMongoId()
@@ -74,4 +74,4 @@ const getQuestionByIdValidator = () => {
     ]
 }
 
-export { uploadQuestionValidator, getAllQuestionsValidator, getQuestionByIdValidator };
+export { uploadQuestionValidator, getAllQuestionsValidator, idValidator };
