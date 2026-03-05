@@ -14,6 +14,7 @@ import listRouter from "./routes/list.routes.js";
 import chatRouter from "./routes/chat.routes.js";
 import friendRouter from "./routes/friend.routes.js";
 import questionRouter from "./routes/question.routes.js";
+import collectionRouter from "./routes/collection.routes.js";
 
 dotenv.config({
     path: "./.env"
@@ -47,6 +48,7 @@ app.use("/api/v1/list", listRouter);
 
 // ======= Contest =================================
 app.use("/api/v1/questions", questionRouter);
+app.use("/api/v1/collections", collectionRouter);
 
 //==== TalkTown =========================================
 app.use("/api/v1/chat", chatRouter);
