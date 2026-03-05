@@ -5,6 +5,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import CollectionQuestion from "../models/collectionQuestion.model.js";
 import Collection from "../models/collection.model.js";
 
+
+
 const uploadQuestion = asyncHandler(async(req, res) => {
 
     const {title, platform, difficulty, questionUrl, topics} = req.body;
@@ -148,9 +150,55 @@ const deleteQuestion = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(new ApiResponse(200, "Question removed", {}));
+    .json(new ApiResponse(200, {}, "Question removed"));
 })
 
-export {uploadQuestion, getAllQuestions, getQuestionById, deleteQuestion};
+
+const updateQuestion = asyncHandler(async (req, res) => {
+    const {questionId} = req.params
+
+    const {title, difficulty, platform} = req.body
+
+    if(!isValidObjectId(questionId)){
+         throw new ApiError(400, "Invalid question ID");
+    }
+
+    if(!title && !difficulty && !platform){
+        throw new ApiError(400, 'At least one field is required')
+    }
+
+    const update = {};
+
+    if (title && title.trim() !== '') update.title = title.trim();
+    if (difficulty) update.difficulty = difficulty.toLowerCase();
+    if (platform) update.platform = platform.toLowerCase();
+
+
+    const question = await Question.findOneAndUpdate(
+        {
+            _id : questionId,
+            addedBy : req.user._id,
+            isDeleted: false,
+        },
+        {
+            $set : update
+        },
+        {
+            new : true,
+            runValidators : true
+        }
+    )
+
+    if (!question) {
+        throw new ApiError(404, "Question not found");
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, question, "Question updated" ));
+})
+
+
+export {uploadQuestion, getAllQuestions, getQuestionById, deleteQuestion, updateQuestion};
 
 

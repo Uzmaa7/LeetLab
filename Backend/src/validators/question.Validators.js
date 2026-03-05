@@ -74,4 +74,26 @@ const idValidator = () => {
     ]
 }
 
-export { uploadQuestionValidator, getAllQuestionsValidator, idValidator };
+const updateQuestionValidator = () => {
+    return[
+         body("title")
+            .trim()
+            .optional()
+            .isLength({ min: 2, max: 100 })
+            .withMessage("Title cannot exceed 20 characters"),
+
+        body("platform")
+            .trim()
+            .optional()
+            .isIn(["Leetcode", "GFG", "Codeforces", "Other"])
+            .withMessage("Invalid platform name"),
+
+        body("difficulty")
+            .trim()
+            .optional()
+            .isIn(["easy", "medium", "hard"])
+            .withMessage("Difficulty must be easy, medium, or hard"),
+    ]
+}
+
+export { uploadQuestionValidator, getAllQuestionsValidator, idValidator, updateQuestionValidator};
