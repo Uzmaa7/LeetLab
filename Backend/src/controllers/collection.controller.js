@@ -90,8 +90,10 @@ const updateCollection = asyncHandler(async(req, res)=> {
 
     const {collectionId} = req.params;
 
-    if(!name && !description && isPrivate === undefined){
-        throw new ApiError("400", "Atleast one field is required")
+    const { name, description, isPrivate } = req.body;
+
+    if(!name && description === undefined && isPrivate === undefined){
+        throw new ApiError(400, "Atleast one field is required")
     }
 
     if (name && !name.trim()) {
@@ -100,7 +102,7 @@ const updateCollection = asyncHandler(async(req, res)=> {
 
     const update = {};
 
-    if(description){
+    if(description !== undefined){//if user send empty string to remove desc then it will update 
         update.description = description.trim();
     }
     if(name){
@@ -111,19 +113,27 @@ const updateCollection = asyncHandler(async(req, res)=> {
         update.isPrivate = isPrivate;
     }
 
-    const collection = await Collection.findOneAndUpdate(
-        {_id : collectionId, createdBy : req.user._id},
-        { $set : update},
-        { new :  true , runValidators : true}
-    )
-
-    if(!collection){
-        throw new ApiError(404, "Collection not found");
+    try {
+        const collection = await Collection.findOneAndUpdate(
+            {_id : collectionId, createdBy : req.user._id},
+            { $set : update},
+            { new :  true , runValidators : true}
+        )
+    
+        if(!collection){
+            throw new ApiError(404, "Collection not found");
+        }
+    
+        return res
+        .status(200)
+        .json(new ApiResponse(200,  collection, "Collection updated"));
+    } catch (error) {
+        if(error.code === 11000){
+            throw new ApiError(409, "You already have another collection with this name");
+        }
+        console.log("Error while updating a collection", error);
+        throw new ApiError(500, "Error while updating a collection")
     }
-
-    return res
-    .status(200)
-    .json(new ApiResponse(200,  collection, "Collection updated"));
 
 
 })
