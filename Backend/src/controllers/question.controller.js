@@ -9,6 +9,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 
 
 const uploadQuestion = asyncHandler(async(req, res) => {
+    console.log("4")
 
     const {title, platform, difficulty, questionUrl, topics} = req.body;
 
@@ -18,6 +19,8 @@ const uploadQuestion = asyncHandler(async(req, res) => {
 
     const question = await uploadQuestionService(userId, title, 
     platform, difficulty, questionUrl, topics);
+
+    console.log("!", question);
 
     return res
     .status(201)

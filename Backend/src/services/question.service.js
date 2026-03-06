@@ -1,8 +1,8 @@
 import Question from "../models/question.model.js";
 import { ApiError } from "../utils/ApiError.js";
-import URL from "url";
 
-const normalizeUrlService = async(url) => {
+
+const normalizeUrlService = (url) => {
     try {
         new URL(url)
     } catch (error) {
@@ -17,9 +17,10 @@ const normalizeUrlService = async(url) => {
 }
 
 const uploadQuestionService = async (userId, title, platform, difficulty, questionUrl, topics=[]) =>  {
+    console.log("3")
     try {
 
-        return await Question.create(
+        const question =  await Question.create(
             {
                 addedBy : userId,
                 title : title.trim(),
@@ -33,6 +34,10 @@ const uploadQuestionService = async (userId, title, platform, difficulty, questi
                 )]                                 //Duplicates hata diye -> new Set
             }
         )
+
+        console.log("2", question);
+
+        return question;
         
     } catch (error) {
         if(error.code === 11000){
