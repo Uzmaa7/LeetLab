@@ -6,6 +6,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
+
+
 const addQuestionToCollection = asyncHandler(async(req, res) => {
 
     const {collectionId} = req.params;
@@ -212,4 +214,29 @@ const bulkRemoveQuestions = asyncHandler(async(req, res) => {
     );
 })
 
-export {addQuestionToCollection, removeQuestionFromCollection, bulkAddQuestions, bulkRemoveQuestions};
+const removeAllQuestions = asyncHandler( async (req, res) => {
+    const { collectionId } = req.params;
+
+    const collection = await Collection.findOne({
+        _id : collectionId,
+        createdBy : req.user._id,
+    })
+    if(!collection){
+        throw new ApiError(404, "Collection not found")
+    }
+
+    const result = await CollectionQuestion.deleteMany({ collectionId });
+
+    await Collection.updateOne(
+        { _id: collectionId },
+        { $set: { questionsCount: 0 } }
+    );
+
+    return res.status(200).json(
+            new ApiResponse(200,{removed: result.deletedCount}, "All questions removed")
+    );
+})
+
+
+export {addQuestionToCollection, removeQuestionFromCollection, 
+bulkAddQuestions, bulkRemoveQuestions, removeAllQuestions};
