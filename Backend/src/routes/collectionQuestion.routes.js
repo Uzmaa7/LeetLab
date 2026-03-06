@@ -1,8 +1,8 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
-import { addQuestionToCollectionValidator, idValidator } from "../validators/collection.Validators.js";
-import { addQuestionToCollection, removeQuestionFromCollection } from "../controllers/collectionQuestion.controller.js";
+import { addQuestionToCollectionValidator, idValidator, bulkAddQuestionsValidator } from "../validators/collection.Validators.js";
+import { addQuestionToCollection, bulkAddQuestions, removeQuestionFromCollection } from "../controllers/collectionQuestion.controller.js";
 
 const collectionQuestionRouter = express.Router();
 
@@ -15,7 +15,7 @@ collectionQuestionRouter.post("/:collectionId/questions",verifyJWT, addQuestionT
 collectionQuestionRouter.delete("/:collectionId/questions/:questionId",verifyJWT, idValidator(), validate, removeQuestionFromCollection);
 
 //bull add question
-
+collectionQuestionRouter.post("/:collectionId/questions/bulk", verifyJWT, idValidator(), bulkAddQuestionsValidator(), validate, bulkAddQuestions);
 //bulk remove question
 
 //remove all questions from the collection

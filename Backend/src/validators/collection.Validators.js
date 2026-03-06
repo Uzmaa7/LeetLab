@@ -67,4 +67,17 @@ const updateCollectionValidator = () => {
             .withMessage("isPrivate must be a boolean value (true or false)")
     ];
 }
-export { createCollectionValidator, idValidator, updateCollectionValidator, addQuestionToCollectionValidator };
+
+const bulkAddQuestionsValidator = () => {
+    return[
+        body("questionIds")
+        .isArray({ min: 1 })
+        .withMessage("questionIds must be a non-empty array"),
+
+        body("questionIds.*")
+        .isMongoId()
+        .withMessage("Each questionId must be a valid Mongo ID"),
+    ]
+}
+export { createCollectionValidator, idValidator,
+updateCollectionValidator, addQuestionToCollectionValidator,bulkAddQuestionsValidator };
