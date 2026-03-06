@@ -157,4 +157,59 @@ const bulkAddQuestions = asyncHandler(async (req, res) => {
     );
 });
 
-export {addQuestionToCollection, removeQuestionFromCollection, bulkAddQuestions};
+const bulkRemoveQuestions = asyncHandler(async(req, res) => {
+     const { collectionId } = req.params;
+    const { questionIds } = req.body;
+
+    // 1. Input Validation
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+        throw new ApiError(400, "questionIds must be a non-empty array");
+    }
+
+    const collection = await Collection.findOne({
+        _id : collectionId,
+        createdBy : req.user._id,
+    })
+    if(!collection){
+        throw new ApiError(404, "Collection not found")
+    }
+
+    // 2. Filter Valid IDs & Check Ownership/Existence
+    const validIds = questionIds.filter(id => isValidObjectId(id));
+    if (validIds.length === 0) {
+        throw new ApiError(400, "No valid question IDs provided");
+    }
+
+    // 4. Perform deleteMany
+    const result = await CollectionQuestion.deleteMany({
+        collectionId: collectionId,
+        questionId: { $in: validIds }
+    });
+
+    if (result.deletedCount > 0) {
+        await Collection.updateOne(
+            { _id: collectionId },
+            [
+                {
+                    $set: {
+                        questionsCount: {
+                            $max: [{ $subtract: ["$questionsCount", result.deletedCount] },0]
+                        }
+                    }
+                }
+            ],
+            { updatePipeline: true }
+        );
+
+    }
+
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            removed: result.deletedCount,
+            attempted: validIds.length,
+        }, "Questions removed from collection")
+    );
+})
+
+export {addQuestionToCollection, removeQuestionFromCollection, bulkAddQuestions, bulkRemoveQuestions};
