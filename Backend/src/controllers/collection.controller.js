@@ -138,5 +138,68 @@ const updateCollection = asyncHandler(async(req, res)=> {
 
 })
 
+const getCollectionQuestions = asyncHandler( async (req, res) => {
 
-export {createCollection, getAllCollections, getCollectionById, deleteCollection, updateCollection}
+    const {collectionId} = req.params
+
+    const collection = await Collection.findOne({
+        _id: collectionId,
+        createdBy: req.user._id,
+    });
+
+    if (!collection) {
+        throw new ApiError(404, "Collection not found");
+    }
+
+    const questions = await CollectionQuestion.aggregate(
+        [
+            { 
+                $match : {
+                    collectionId : new mongoose.Types.ObjectId(collectionId),
+                }
+            },
+            {
+                $sort : {
+                    order : 1,
+                    addedAt : -1
+                }
+            },
+            {
+                $lookup : {
+                    from: "questions",
+                    localField: "questionId",
+                    foreignField: "_id",
+                    as: "question",
+                }
+            },
+            {
+                $unwind : "$question"
+            },
+            {
+                $match : {
+                    "question.isDeleted": false
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    order: 1,
+                    addedAt: 1,
+                    question: 1,
+                }
+            }
+        ]
+    )
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,  {
+                collection,
+                questions,
+            },"Collection questions fetched",)
+        );
+})
+
+export {createCollection, getAllCollections, getCollectionById,
+deleteCollection, updateCollection, getCollectionQuestions}

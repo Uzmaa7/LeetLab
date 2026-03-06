@@ -1,6 +1,10 @@
 import express from "express";
-import { createCollection, getAllCollections, getCollectionById, deleteCollection, updateCollection } from "../controllers/collection.controller.js";
+
+import { createCollection, getAllCollections, getCollectionById,
+deleteCollection, updateCollection, getCollectionQuestions } from "../controllers/collection.controller.js";
+
 import { createCollectionValidator, idValidator, updateCollectionValidator } from "../validators/collection.Validators.js";
+
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validator.middleware.js";
 
@@ -21,5 +25,9 @@ collectionRouter.delete("/:collectionId", verifyJWT, idValidator(), validate, de
 
 //update a collection 
 collectionRouter.patch("/:collectionId", verifyJWT, idValidator(), updateCollectionValidator(),  validate, updateCollection);
+
+//fetch all questions of a particular collection
+collectionRouter.get("/:collectionId/questions",verifyJWT, idValidator(), validate, getCollectionQuestions);
+
 
 export default collectionRouter;
