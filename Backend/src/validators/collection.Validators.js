@@ -5,6 +5,7 @@ const createCollectionValidator = () => {
         body("name")
             .trim()
             .notEmpty().withMessage("Collection name is required")
+            .bail()
             .isString().withMessage("name must be a string")
             .isLength({ max: 50 })
             .withMessage("Collection name cannot be more than 50 characters"),
