@@ -32,6 +32,19 @@ const idValidator = () => {
     ]
 }
 
+const questionIdBodyValidator = () => {
+    return[
+    body("questionId")
+        .trim()
+        .notEmpty().withMessage("Question ID is required").bail()
+        .isMongoId().withMessage("Invalid question ID format")
+];}
+
+const addQuestionToCollectionValidator = () => [
+    ...idValidator(),          // Params check karega
+    ...questionIdBodyValidator() // Body check karega
+];
+
 const updateCollectionValidator = () => {
     return [
         body("name")
@@ -54,4 +67,4 @@ const updateCollectionValidator = () => {
             .withMessage("isPrivate must be a boolean value (true or false)")
     ];
 }
-export { createCollectionValidator, idValidator, updateCollectionValidator };
+export { createCollectionValidator, idValidator, updateCollectionValidator, addQuestionToCollectionValidator };
