@@ -17,7 +17,7 @@ const questionSchema = new mongoose.Schema({
 
     platform: {
         type: String,
-        enum: ["Leetcode", "GFG", "Codeforces", "Other"],
+        enum: ["leetcode", "gfg", "codeforces", "other"],
         required: true,
     },
 

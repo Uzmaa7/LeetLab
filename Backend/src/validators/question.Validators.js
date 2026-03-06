@@ -11,7 +11,8 @@ const uploadQuestionValidator = () => {
         body("platform")
             .trim()
             .notEmpty().withMessage("Platform is required")
-            .isIn(["Leetcode", "GFG", "Codeforces", "Other"])
+            .bail()
+            .isIn(["leetcode", "gfg", "codeforces", "other"])
             .withMessage("Invalid platform name"),
 
         body("difficulty")
@@ -46,7 +47,7 @@ const getAllQuestionsValidator = () => {
 
         query("platform")
             .optional()
-            .isIn(["Leetcode", "GFG", "Codeforces", "Other"]),
+            .isIn(["leetcode", "gfg", "codeforces", "other"]),
 
         query("topic")
             .optional()
@@ -85,7 +86,7 @@ const updateQuestionValidator = () => {
         body("platform")
             .trim()
             .optional()
-            .isIn(["Leetcode", "GFG", "Codeforces", "Other"])
+            .isIn(["leetcode", "gfg", "codeforces", "other"])
             .withMessage("Invalid platform name"),
 
         body("difficulty")

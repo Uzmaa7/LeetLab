@@ -24,7 +24,7 @@ const uploadQuestion = asyncHandler(async(req, res) => {
 
     return res
     .status(201)
-    .json(new ApiResponse(201, "Question added successfully", question));
+    .json(new ApiResponse(201, question , "Question added successfully", ));
 
 })
 
@@ -66,7 +66,7 @@ const getAllQuestions = asyncHandler(async(req, res) => {
 
     const filter = {$and : conditions};
 
-    const [questions, total] = await Promise.all([
+    const [questions, totalQuestions] = await Promise.all([
         Question.find(filter)
         .sort({createdAt: -1})
         .skip(skip)
@@ -76,9 +76,9 @@ const getAllQuestions = asyncHandler(async(req, res) => {
     ])
 
     return res.status(200).json(new ApiResponse(200, {
-        total,
+        totalQuestions,
         page: pageNum,
-        pages: Math.ceil(total/limitNum),
+        pages: Math.ceil(totalQuestions/limitNum),
         limit: limitNum,
         questions,
     } ,"Questions fetched"))
