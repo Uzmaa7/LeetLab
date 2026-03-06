@@ -5,6 +5,7 @@ import Question from "../models/question.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { validateCollection } from "../services/collectionQuestion.service.js";
 
 
 
@@ -13,13 +14,7 @@ const addQuestionToCollection = asyncHandler(async(req, res) => {
     const {collectionId} = req.params;
     const {questionId} = req.body;
 
-    const collection = await Collection.findOne({
-        _id : collectionId,
-        createdBy : req.user._id,
-    })
-    if(!collection){
-        throw new ApiError(404, "Collection not found")
-    }
+    await validateCollection(collectionId, req.user._id);
 
     const question = await Question.findOne(
         {
@@ -57,13 +52,8 @@ const addQuestionToCollection = asyncHandler(async(req, res) => {
 const removeQuestionFromCollection = asyncHandler( async (req, res) => {
     const { collectionId, questionId } = req.params;
 
-    const collection = await Collection.findOne({
-        _id : collectionId,
-        createdBy : req.user._id,
-    })
-    if(!collection){
-        throw new ApiError(404, "Collection not found")
-    }
+    await validateCollection(collectionId, req.user._id);
+
 
     const removed = await CollectionQuestion.findOneAndDelete({
         collectionId,
@@ -94,13 +84,8 @@ const bulkAddQuestions = asyncHandler(async (req, res) => {
         throw new ApiError(400, "questionIds must be a non-empty array");
     }
 
-    const collection = await Collection.findOne({
-        _id : collectionId,
-        createdBy : req.user._id,
-    })
-    if(!collection){
-        throw new ApiError(404, "Collection not found")
-    }
+    await validateCollection(collectionId, req.user._id);
+
 
     // 2. Filter Valid IDs & Check Ownership/Existence
     const validIds = questionIds.filter(id => isValidObjectId(id));
@@ -168,13 +153,8 @@ const bulkRemoveQuestions = asyncHandler(async(req, res) => {
         throw new ApiError(400, "questionIds must be a non-empty array");
     }
 
-    const collection = await Collection.findOne({
-        _id : collectionId,
-        createdBy : req.user._id,
-    })
-    if(!collection){
-        throw new ApiError(404, "Collection not found")
-    }
+    await validateCollection(collectionId, req.user._id);
+
 
     // 2. Filter Valid IDs & Check Ownership/Existence
     const validIds = questionIds.filter(id => isValidObjectId(id));
@@ -217,13 +197,8 @@ const bulkRemoveQuestions = asyncHandler(async(req, res) => {
 const removeAllQuestions = asyncHandler( async (req, res) => {
     const { collectionId } = req.params;
 
-    const collection = await Collection.findOne({
-        _id : collectionId,
-        createdBy : req.user._id,
-    })
-    if(!collection){
-        throw new ApiError(404, "Collection not found")
-    }
+    await validateCollection(collectionId, req.user._id);
+
 
     const result = await CollectionQuestion.deleteMany({ collectionId });
 
