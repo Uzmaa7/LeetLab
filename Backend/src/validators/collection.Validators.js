@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 
 const createCollectionValidator = () => {
     return [
@@ -30,4 +30,27 @@ const idValidator = () => {
             .withMessage("Invalid collection ID")
     ]
 }
-export { createCollectionValidator, idValidator };
+
+const updateCollectionValidator = () => {
+    return [
+        body("name")
+            .trim()
+            .optional()
+            .isString().withMessage("name must be a string")
+            .isLength({ max: 50 })
+            .withMessage("Collection name cannot be more than 50 characters"),
+
+        body("description")
+            .optional()
+            .trim()
+            .isString().withMessage("description must be a string")
+            .isLength({ max: 100 })
+            .withMessage("Description cannot be more than 100 characters"),
+
+        body("isPrivate")
+            .optional()
+            .isBoolean()
+            .withMessage("isPrivate must be a boolean value (true or false)")
+    ];
+}
+export { createCollectionValidator, idValidator, updateCollectionValidator };

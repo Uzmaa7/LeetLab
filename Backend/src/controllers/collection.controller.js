@@ -86,7 +86,47 @@ const deleteCollection = asyncHandler( async (req, res) => {
 
 })
 
+const updateCollection = asyncHandler(async(req, res)=> {
+
+    const {collectionId} = req.params;
+
+    if(!name && !description && isPrivate === undefined){
+        throw new ApiError("400", "Atleast one field is required")
+    }
+
+    if (name && !name.trim()) {
+        throw new ApiError(400, "Collection name cannot be empty");
+    }
+
+    const update = {};
+
+    if(description){
+        update.description = description.trim();
+    }
+    if(name){
+        update.name = name.trim();
+        update.nameLower = name.trim().toLowerCase();
+    }
+    if(isPrivate !== undefined){
+        update.isPrivate = isPrivate;
+    }
+
+    const collection = await Collection.findOneAndUpdate(
+        {_id : collectionId, createdBy : req.user._id},
+        { $set : update},
+        { new :  true , runValidators : true}
+    )
+
+    if(!collection){
+        throw new ApiError(404, "Collection not found");
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,  collection, "Collection updated"));
 
 
+})
 
-export {createCollection, getAllCollections, getCollectionById, deleteCollection}
+
+export {createCollection, getAllCollections, getCollectionById, deleteCollection, updateCollection}
