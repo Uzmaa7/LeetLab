@@ -201,5 +201,67 @@ const getCollectionQuestions = asyncHandler( async (req, res) => {
         );
 })
 
+const getPublicCollectionQuestions = asyncHandler(async (req, res) => {
+    const { collectionId } = req.params;
+
+    
+
+    const collection = await Collection.findOne({
+        _id: collectionId,
+        isPrivate: false,
+    }).select("name description createdBy");
+
+    if (!collection) {
+        throw new ApiError(404, "Collection not found or private");
+    }
+
+    const questions = await CollectionQuestion.aggregate(
+        [
+            { 
+                $match : {
+                    collectionId : new mongoose.Types.ObjectId(collectionId),
+                }
+            },
+            {
+                $sort : {
+                    order : 1,
+                    addedAt : -1
+                }
+            },
+            {
+                $lookup : {
+                    from: "questions",
+                    localField: "questionId",
+                    foreignField: "_id",
+                    as: "question",
+                }
+            },
+            {
+                $unwind : "$question"
+            },
+            {
+                $match : {
+                    "question.isDeleted": false
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    order: 1,
+                    addedAt: 1,
+                    question: 1,
+                }
+            }
+        ]
+    )
+
+    return res.json(
+        new ApiResponse(200, {
+            collection,
+            questions,
+        }, "Public collection questions")
+    );
+});
+
 export {createCollection, getAllCollections, getCollectionById,
-deleteCollection, updateCollection, getCollectionQuestions}
+deleteCollection, updateCollection, getCollectionQuestions, getPublicCollectionQuestions}

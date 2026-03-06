@@ -1,7 +1,7 @@
 import express from "express";
 
 import { createCollection, getAllCollections, getCollectionById,
-deleteCollection, updateCollection, getCollectionQuestions } from "../controllers/collection.controller.js";
+deleteCollection, updateCollection, getCollectionQuestions, getPublicCollectionQuestions  } from "../controllers/collection.controller.js";
 
 import { createCollectionValidator, idValidator, updateCollectionValidator } from "../validators/collection.Validators.js";
 
@@ -29,5 +29,7 @@ collectionRouter.patch("/:collectionId", verifyJWT, idValidator(), updateCollect
 //fetch all questions of a particular collection
 collectionRouter.get("/:collectionId/questions",verifyJWT, idValidator(), validate, getCollectionQuestions);
 
+//fetch all questions of a public collection 
+collectionRouter.get("/public/:collectionId/questions", verifyJWT, idValidator(), validate, getPublicCollectionQuestions);
 
 export default collectionRouter;
