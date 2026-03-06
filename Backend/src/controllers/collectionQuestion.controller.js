@@ -51,4 +51,35 @@ const addQuestionToCollection = asyncHandler(async(req, res) => {
         .json(new ApiResponse(201, {} , "Question added to collection"));
 })
 
-export {addQuestionToCollection};
+const removeQuestionFromCollection = asyncHandler( async (req, res) => {
+    const { collectionId, questionId } = req.params;
+
+    const collection = await Collection.findOne({
+        _id : collectionId,
+        createdBy : req.user._id,
+    })
+    if(!collection){
+        throw new ApiError(404, "Collection not found")
+    }
+
+    const removed = await CollectionQuestion.findOneAndDelete({
+        collectionId,
+        questionId,
+    });
+
+    if (!removed) {
+        throw new ApiError(404, "Question not found in this collection");
+    }
+
+    await Collection.updateOne(
+        { _id: collectionId },
+        { $inc: { questionsCount: -1 } }
+    );
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Question removed from collection"));
+
+})
+
+export {addQuestionToCollection, removeQuestionFromCollection};
