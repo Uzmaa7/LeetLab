@@ -14,5 +14,5 @@ questionRouter.get("/:questionId", verifyJWT, idValidator(), validate, getQuesti
 
 questionRouter.delete("/:questionId", verifyJWT,idValidator(),  validate,  deleteQuestion);
    
-questionRouter.patch("/:questionId", verifyJWT, idValidator(), updateQuestionValidator() ,validate,updateQuestion)
+questionRouter.patch("/:questionId", verifyJWT, idValidator(), updateQuestionValidator() ,validate,updateQuestion);
 export default questionRouter;
