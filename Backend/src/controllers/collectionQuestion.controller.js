@@ -114,13 +114,17 @@ const bulkAddQuestions = asyncHandler(async (req, res) => {
         questionId: q._id,
     }));
 
+    console.log("bulkdocs are -> ", bulkDocs);
+
     // 4. Perform Insert (Ignore Duplicates)
     try {
         //insertMany() needs an array of documents. [{}, {}, {}]
-        await CollectionQuestion.insertMany(bulkDocs, {
+        const collectionQuestion = await CollectionQuestion.insertMany(bulkDocs, {
             ordered: false, // Continue inserting even if duplicates are found
         });
+        console.log("bulk bulk bulk", collectionQuestion);
     } catch (error) {
+         console.log("InsertMany error ->", error);
         // We catch errors here because 'ordered: false' throws if ANY duplicate is found.
         // We don't care about duplicates, we just want to ensure the unique ones are in.
         // We silence the error to proceed to the count update.
@@ -130,10 +134,13 @@ const bulkAddQuestions = asyncHandler(async (req, res) => {
     // This is safer than $inc because it corrects any previous drift automatically.
     const currentTotal = await CollectionQuestion.countDocuments({ collectionId });
 
-    await Collection.findByIdAndUpdate(
+    const collection = await Collection.findByIdAndUpdate(
         collectionId, 
-        {$set: { questionsCount: currentTotal }}
+        {$set: { questionsCount: currentTotal }},
+        { new: true }
     );
+
+    console.log("bulk addition error", collection)
 
     return res.status(200).json(
         new ApiResponse(200,  {

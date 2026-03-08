@@ -28,7 +28,7 @@ const collectionQuestionSchema = new mongoose.Schema({
 },
     { timestamps: false });
 
-collectionQuestionSchema.index({ collection: 1, question: 1 }, { unique: true });
+collectionQuestionSchema.index({ collectionId: 1, questionId: 1 }, { unique: true });
 
 const CollectionQuestion = mongoose.model("CollectionQuestion", collectionQuestionSchema);
 

@@ -4,6 +4,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import Collection from "../models/collection.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import CollectionQuestion from "../models/collectionQuestion.model.js";
+import mongoose from "mongoose";
 
 
 
