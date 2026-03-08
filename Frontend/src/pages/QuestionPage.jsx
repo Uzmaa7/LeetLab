@@ -48,7 +48,7 @@ const HeroAnimation = ({ activeTab }) => {
     const autumnColors = ["#e67e22", "#d35400", "#f39c12", "#c0392b", "#e74c3c"];
 
     return (
-        
+
         <div className="relative w-full max-w-[240px] h-[260px] mb-[-60px] overflow-visible hidden md:block select-none drop-shadow-[0_0_20px_rgba(230,126,34,0.15)] mx-auto z-30">
 
             {/* Atmospheric Icons */}
@@ -60,7 +60,7 @@ const HeroAnimation = ({ activeTab }) => {
                 <CloudMoon size={28} />
             </motion.div>
 
-            
+
             <svg viewBox="0 0 450 300"
                 className="w-full h-full scale-150 origin-bottom translate-y-4 overflow-visible">
                 <defs>
@@ -202,6 +202,13 @@ const QuestionPage = () => {
     const [selectedIds, setSelectedIds] = useState([]); // Track checked checkboxes
     const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
+    //pagination
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalQuestions: 0
+    });
+
 
     // Filter States (UI Only)
     const [searchTerm, setSearchTerm] = useState("");
@@ -227,20 +234,29 @@ const QuestionPage = () => {
         { name: "Toppers", icon: <Trophy size={18} /> }
     ];
 
-    
-    const fetchQuestions = useCallback(async () => {
+
+    const fetchQuestions = useCallback(async (page = 1) => {
         setLoading(true);
         try {
-            const response = await getAllQuestionsService();
+
+            // Backend pagination params bheje: page aur limit (default 20)
+            const response = await getAllQuestionsService({ page, limit: 5 });
             console.log("Full Response for Uzma:", response);
 
-            // FIX: Console ke mutabik data 'response.data.questions' mein hai
-            const questionsArray = response?.data?.questions || [];
+            // Backend se data extract kiya
+            const { questions, pages, totalQuestions, page: current } = response?.data || {};
 
-            console.log("Extracted Array:", questionsArray);
-            setQuestions(Array.isArray(questionsArray) ? questionsArray : []);
+            setQuestions(Array.isArray(questions) ? questions : []);
 
-            setFilteredQuestions(questionsArray);
+            setFilteredQuestions(questions || []);
+
+            // Pagination state update ki
+            setPagination({
+                currentPage: current || 1,
+                totalPages: pages || 1,
+                totalQuestions: totalQuestions || 0
+            });
+
         } catch (err) {
             console.error("Fetch error:", err);
             setQuestions([]);
@@ -251,7 +267,7 @@ const QuestionPage = () => {
 
     useEffect(() => {
         if (activeTab === "Problems") {
-            fetchQuestions();
+            fetchQuestions(1);
         }
     }, [activeTab, fetchQuestions]);
 
@@ -278,50 +294,50 @@ const QuestionPage = () => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    
-const handleUploadOrUpdate = async (e) => {
-    e.preventDefault();
 
-    try {
-        if (editingId) {
-            // FIX: Update ke waqt hume split karne ki zaroorat nahi hai 
-            // kyunki backend sirf title, difficulty, aur platform maang raha hai.
-            const updatePayload = {
-                title: formData.title.trim(),
-                difficulty: formData.difficulty.toLowerCase(),
-                platform: formData.platform.toLowerCase()
-            };
+    const handleUploadOrUpdate = async (e) => {
+        e.preventDefault();
 
-            await updateQuestionService(editingId, updatePayload);
-            toast.success("Question updated");
-        } else {
-            // Upload ke waqt string ko array banana zaroori hai
-            const formattedTopics = typeof formData.topics === 'string'
-                ? formData.topics.split(',').map(t => t.trim()).filter(t => t !== "")
-                : [];
+        try {
+            if (editingId) {
+                // FIX: Update ke waqt hume split karne ki zaroorat nahi hai 
+                // kyunki backend sirf title, difficulty, aur platform maang raha hai.
+                const updatePayload = {
+                    title: formData.title.trim(),
+                    difficulty: formData.difficulty.toLowerCase(),
+                    platform: formData.platform.toLowerCase()
+                };
 
-            const uploadPayload = {
-                title: formData.title.trim(),
-                platform: formData.platform.toLowerCase(),
-                difficulty: formData.difficulty.toLowerCase(),
-                questionUrl: formData.questionUrl.trim(),
-                topics: formattedTopics
-            };
+                await updateQuestionService(editingId, updatePayload);
+                toast.success("Question updated");
+            } else {
+                // Upload ke waqt string ko array banana zaroori hai
+                const formattedTopics = typeof formData.topics === 'string'
+                    ? formData.topics.split(',').map(t => t.trim()).filter(t => t !== "")
+                    : [];
 
-            await uploadQuestionService(uploadPayload);
-            toast.success("Problem uploaded successfully!");
+                const uploadPayload = {
+                    title: formData.title.trim(),
+                    platform: formData.platform.toLowerCase(),
+                    difficulty: formData.difficulty.toLowerCase(),
+                    questionUrl: formData.questionUrl.trim(),
+                    topics: formattedTopics
+                };
+
+                await uploadQuestionService(uploadPayload);
+                toast.success("Problem uploaded successfully!");
+            }
+
+            setIsModalOpen(false);
+            setFormData({ title: "", platform: "leetcode", difficulty: "easy", questionUrl: "", topics: "" });
+            setTimeout(() => fetchQuestions(), 500);
+
+        } catch (err) {
+            console.error("Error details:", err);
+            const backendError = err?.errors?.[0]?.msg || err?.message || "Operation failed";
+            toast.error(backendError);
         }
-
-        setIsModalOpen(false);
-        setFormData({ title: "", platform: "leetcode", difficulty: "easy", questionUrl: "", topics: "" });
-        setTimeout(() => fetchQuestions(), 500);
-
-    } catch (err) {
-        console.error("Error details:", err);
-        const backendError = err?.errors?.[0]?.msg || err?.message || "Operation failed";
-        toast.error(backendError);
-    }
-};
+    };
 
     const handleDelete = async (id) => {
         if (window.confirm("Move this question to trash?")) {
@@ -548,6 +564,52 @@ const handleUploadOrUpdate = async (e) => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Bar*/}
+                        {pagination.totalPages > 1 && (
+                            <div className="mt-6 flex items-center justify-between px-2 pb-10">
+                                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                                    Total {pagination.totalQuestions} Questions
+                                </span>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={pagination.currentPage === 1}
+                                        onClick={() => fetchQuestions(pagination.currentPage - 1)}
+                                        className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronUp className="-rotate-90" size={16} />
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(pagination.totalPages)].map((_, i) => {
+                                            const pageNum = i + 1;
+                                            // Sirf current page ke aas-pass ke numbers dikhane ke liye (Optional logic)
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => fetchQuestions(pageNum)}
+                                                    className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${pagination.currentPage === pageNum
+                                                            ? "bg-orange-600 border-orange-500 text-white shadow-lg shadow-orange-900/20"
+                                                            : "bg-[#18181B] border-zinc-800 text-zinc-500 hover:border-zinc-600"
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button
+                                        disabled={pagination.currentPage === pagination.totalPages}
+                                        onClick={() => fetchQuestions(pagination.currentPage + 1)}
+                                        className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronUp className="rotate-90" size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
@@ -607,111 +669,111 @@ const handleUploadOrUpdate = async (e) => {
                 )}
             </AnimatePresence>
 
-           
-        
-        
 
-<AnimatePresence>
-    {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-5 rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto"
-            >
-                {/* Header: Slim height */}
-                <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                        {editingId ? 'Update' : 'New'} Question
-                    </h3>
-                    <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
-                        <X size={16} />
-                    </button>
-                </div>
 
-                <form onSubmit={handleUploadOrUpdate} className="space-y-3">
-                    {/* Title: Compact */}
-                    <div className="space-y-1">
-                        <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Title</label>
-                        <input 
-                            required 
-                            className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all" 
-                            value={formData.title} 
-                            placeholder='Two Sum'
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })} 
-                        />
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Platform</label>
-                            <select 
-                                className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer" 
-                                value={formData.platform} 
-                                placeholder="Leetcode"
-                                onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-                            >
-                                <option value="leetcode">LeetCode</option>
-                                <option value="gfg">GFG</option>
-                                <option value="gfg">Codeforces</option>
-                                <option value="gfg">Other</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Difficulty</label>
-                            <select 
-                                className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer" 
-                                value={formData.difficulty} 
-                                onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                            >
-                                <option value="easy">Easy</option>
-                                <option value="medium">Medium</option>
-                                <option value="hard">Hard</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {!editingId && (
-                        <div className="space-y-3">
-                            <div className="space-y-1">
-                                <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">URL</label>
-                                <input 
-                                    required 
-                                    type="url" 
-                                    className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all" 
-                                    value={formData.questionUrl} 
-                                    placeholder='https://leetcode.com/problems'
-                                    onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })} 
-                                />
+            <AnimatePresence>
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-5 rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto"
+                        >
+                            {/* Header: Slim height */}
+                            <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                                <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                                    {editingId ? 'Update' : 'New'} Question
+                                </h3>
+                                <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                    <X size={16} />
+                                </button>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Topics</label>
-                                <input 
-                                    placeholder="Array, DP..."
-                                    className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all" 
-                                    value={formData.topics} 
-                                    onChange={(e) => setFormData({ ...formData, topics: e.target.value })} 
-                                />
-                            </div>
-                        </div>
-                    )}
 
-                    {/* REUSABLE LEETBUTTON INTEGRATED HERE */}
-                    <div className="pt-2">
-                        <LeetButton 
-                            type="submit" 
-                            text={editingId ? 'Save Changes' : 'Add Question'} 
-                            icon={editingId ? CheckCircle2 : Plus}
-                            className="w-full justify-center py-3" 
-                        />
+                            <form onSubmit={handleUploadOrUpdate} className="space-y-3">
+                                {/* Title: Compact */}
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Title</label>
+                                    <input
+                                        required
+                                        className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+                                        value={formData.title}
+                                        placeholder='Two Sum'
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Platform</label>
+                                        <select
+                                            className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
+                                            value={formData.platform}
+                                            placeholder="Leetcode"
+                                            onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                                        >
+                                            <option value="leetcode">LeetCode</option>
+                                            <option value="gfg">GFG</option>
+                                            <option value="gfg">Codeforces</option>
+                                            <option value="gfg">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Difficulty</label>
+                                        <select
+                                            className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
+                                            value={formData.difficulty}
+                                            onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                                        >
+                                            <option value="easy">Easy</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="hard">Hard</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {!editingId && (
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">URL</label>
+                                            <input
+                                                required
+                                                type="url"
+                                                className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+                                                value={formData.questionUrl}
+                                                placeholder='https://leetcode.com/problems'
+                                                onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Topics</label>
+                                            <input
+                                                placeholder="Array, DP..."
+                                                className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+                                                value={formData.topics}
+                                                onChange={(e) => setFormData({ ...formData, topics: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* REUSABLE LEETBUTTON INTEGRATED HERE */}
+                                <div className="pt-2">
+                                    <LeetButton
+                                        type="submit"
+                                        text={editingId ? 'Save Changes' : 'Add Question'}
+                                        icon={editingId ? CheckCircle2 : Plus}
+                                        className="w-full justify-center py-3"
+                                    />
+                                </div>
+                            </form>
+                        </motion.div>
                     </div>
-                </form>
-            </motion.div>
-        </div>
-    )}
-</AnimatePresence>
+                )}
+            </AnimatePresence>
         </div>
     );
 
