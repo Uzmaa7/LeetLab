@@ -2,7 +2,7 @@ import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { createManualContest, endContestResult, getAllContest,  scheduleWeeklyContests} from "../controllers/contest.controller.js";
 import { endContestResultValidation } from "../validators/contest.Validators.js";
-import validate from "../middlewares/validator.middleware.js";
+import {validate} from "../middlewares/validator.middleware.js";
 
 
 const contestRouter = express.Router();
@@ -21,13 +21,13 @@ contestRouter.get("/all-contest", verifyJWT, getAllContest);
 contestRouter.post("/generate-weekly", verifyJWT, scheduleWeeklyContests);
 
 // 5. when user clicked on a particular contest he will be able to see all 4questions and their status
-contestRouter.get("/:id", verifyJWT, getAContestDetails)
+// contestRouter.get("/:id", verifyJWT, getAContestDetails)
 
 //6. get active contests
-contestRouter.get("/active-contest", verifyJWT, getActiveContest)
+// contestRouter.get("/active-contest", verifyJWT, getActiveContest)
 
 //7. user can update his leetcodeusername
-contestRouter.patch("/update-leetcode-username", verifyJWT, updateLeetcodeUsername);
+// contestRouter.patch("/update-leetcode-username", verifyJWT, updateLeetcodeUsername);
 
 
 export default contestRouter;
