@@ -58,7 +58,7 @@ questionSchema.index({addedBy: 1, questionUrlNormalized: 1 , isDeleted: 1},
     {unique: true}
 )
 
-questionSchema.index({addedBy: 1, topics: 1}, { unique: true});
+// questionSchema.index({addedBy: 1, topics: 1}, { unique: true});
 
 questionSchema.index({
     title: "text",
