@@ -6,7 +6,7 @@ const Layout = () => {
   const location = useLocation();
 
   // Jin paths par footer nahi chahiye, unhe is array mein add kar dein
-  const pathsWithoutFooter = ["/user/dashboard", "/user/questions"];
+  const pathsWithoutFooter = ["/user/dashboard", "/user/questions", "/user/collections"];
 
   // Check karein ki current path array mein hai ya nahi
   const shouldHideFooter = pathsWithoutFooter.includes(location.pathname)
