@@ -2,7 +2,7 @@ import app from "./src/app.js";
 import dotenv from "dotenv";
 import connectdb from "./src/db/db.js";
 import { Events } from "./src/utils/constants.js";
-import { scheduleWeeklyContests } from "./src/controllers/contest.controller.js";
+// import { scheduleWeeklyContests } from "./src/controllers/contest.controller.js";
 
 dotenv.config();
 
@@ -13,8 +13,10 @@ const port = process.env.PORT || 8000;
 import { createServer } from "http";
 import { Server } from "socket.io";
 import Message from "./src/models/message.model.js";
-const userSocketIDs = new Map();
 // import {v4 as uuid} from "uuid";
+
+const userSocketIDs = new Map();
+
 const server = createServer(app)
 
 const getSockets = (members) => {
@@ -32,7 +34,7 @@ const io = new Server(server, {
 });
 
 io.use((socket, next) => {
-
+    
 })
 
 
@@ -98,7 +100,7 @@ io.on("connection", (socket) => {
 
 connectdb()
     .then(() => {
-        scheduleWeeklyContests();
+        // scheduleWeeklyContests();
         server.listen(port, () => {
             console.log(`server is listening on port ${port}`)
         })
