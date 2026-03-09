@@ -6,6 +6,8 @@ import {
     CheckCircle2, Edit3, Trash2, Square, CheckSquare, FolderPlus, Laptop, Sparkles, CloudMoon
 } from 'lucide-react';
 import { deleteQuestionService, getAllQuestionsService, updateQuestionService, uploadQuestionService } from "../services/question.services.js";
+import {bulkAddQuestionsService, getAllCollectionsService, addQuestionToCollectionService} from "../services/collection.service.js"
+
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { LeetButton } from '../components/index.jsx';
@@ -29,6 +31,56 @@ const QuestionPage = () => {
     const [editingId, setEditingId] = useState(null); // Tracks if we are updating
     const [selectedIds, setSelectedIds] = useState([]); // Track checked checkboxes
     const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+
+    //collection
+    const [userCollections, setUserCollections] = useState([]);
+    const [selectedCollectionId, setSelectedCollectionId] = useState("");
+
+
+    // 1. Loading state add karein form submission ke liye
+const [submitting, setSubmitting] = useState(false);
+    
+
+// 1. Fetch user collections for the modal
+    useEffect(() => {
+        if (isCollectionModalOpen) {
+            const fetchUserCollections = async () => {
+                try {
+                    // Backend expects an object {page, limit}
+                    const res = await getAllCollectionsService({ page: 1, limit: 50 });
+                    setUserCollections(res?.data?.allCollections || []);
+                } catch (err) {
+                    toast.error("Failed to load your collections");
+                }
+            };
+            fetchUserCollections();
+        }
+    }, [isCollectionModalOpen]);
+
+    // 2. Add Selected Questions to Collection (Backend Connection)
+    const handleAddToCollection = async () => {
+        if (!selectedCollectionId) {
+            toast.error("Please select a collection first!");
+            return;
+        }
+
+        try {
+            const loadingToast = toast.loading("Adding to collection...");
+            // Backend call: bulkAddQuestionsService(collectionId, questionIdsArray)
+            await bulkAddQuestionsService(selectedCollectionId, selectedIds);
+
+            toast.dismiss(loadingToast);
+            toast.success(`Successfully added ${selectedIds.length} question(s)!`);
+
+            // Cleanup
+            setIsCollectionModalOpen(false);
+            setSelectedIds([]);
+            setSelectedCollectionId("");
+        } catch (err) {
+            toast.dismiss();
+            toast.error(err?.message || "Failed to add questions");
+        }
+    };
 
     //pagination
     const [pagination, setPagination] = useState({
@@ -125,6 +177,8 @@ const QuestionPage = () => {
 
     const handleUploadOrUpdate = async (e) => {
         e.preventDefault();
+        if (submitting) return; // Prevent multiple clicks
+        setSubmitting(true);
 
         try {
             if (editingId) {
@@ -165,6 +219,10 @@ const QuestionPage = () => {
             const backendError = err?.errors?.[0]?.msg || err?.message || "Operation failed";
             toast.error(backendError);
         }
+
+        finally {
+        setSubmitting(false); // Enable button back
+    }
     };
 
     const handleDelete = async (id) => {
@@ -191,9 +249,9 @@ const QuestionPage = () => {
         setIsModalOpen(true);
     };
 
-    
 
-return (
+
+    return (
         <DashboardLayout
             activeTab="Problems"
             title="Question Bank"
@@ -317,23 +375,59 @@ return (
                                 <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={16} /></button>
                             </div>
                             <form onSubmit={handleUploadOrUpdate} className="space-y-4">
-                                <input required className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-orange-500/40" value={formData.title} placeholder="Title (e.g. Two Sum)" onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                                <input required className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-orange-500/40" value={formData.title} placeholder="Title (e.g. Two Sum)" onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
                                 <div className="grid grid-cols-2 gap-4">
-                                    <select className="bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none" value={formData.platform} onChange={(e) => setFormData({...formData, platform: e.target.value})}>
+                                    <select className="bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none" value={formData.platform} onChange={(e) => setFormData({ ...formData, platform: e.target.value })}>
                                         <option value="leetcode">LeetCode</option>
                                         <option value="gfg">GFG</option>
                                         <option value="codeforces">Codeforces</option>
                                     </select>
-                                    <select className="bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none" value={formData.difficulty} onChange={(e) => setFormData({...formData, difficulty: e.target.value})}>
+                                    <select className="bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none" value={formData.difficulty} onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}>
                                         <option value="easy">Easy</option>
                                         <option value="medium">Medium</option>
                                         <option value="hard">Hard</option>
                                     </select>
                                 </div>
-                                {!editingId && <input required type="url" className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.questionUrl} placeholder="Question URL" onChange={(e) => setFormData({...formData, questionUrl: e.target.value})} />}
-                                <input className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.topics} placeholder="Topics (comma separated)" onChange={(e) => setFormData({...formData, topics: e.target.value})} />
-                                <LeetButton type="submit" text={editingId ? 'Save Changes' : 'Add Question'} icon={editingId ? CheckCircle2 : Plus} className="w-full justify-center" />
+                                {!editingId && <input required type="url" className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.questionUrl} placeholder="Question URL" onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })} />}
+                                <input className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.topics} placeholder="Topics (comma separated)" onChange={(e) => setFormData({ ...formData, topics: e.target.value })} />
+                                <LeetButton type="submit" disabled={submitting} text={submitting ? "Processing..." : (editingId ? 'Save Changes' : 'Add Question')} icon={editingId ? CheckCircle2 : Plus} className="w-full justify-center" />
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+           {/* SAVE TO COLLECTION MODAL (PURE THEME) */}
+            <AnimatePresence>
+                {isCollectionModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-6 rounded-2xl shadow-2xl">
+                            <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-2">
+                                <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                                    Save to Collection
+                                </h3>
+                                <button onClick={() => setIsCollectionModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors"><X size={16} /></button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="px-1 italic">
+                                    <p className="text-[11px] text-zinc-400 font-bold">Adding <span className="text-orange-500">{selectedIds.length}</span> question(s) to:</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Target Collection</label>
+                                    <select className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none focus:border-orange-500/40 font-bold transition-all cursor-pointer" value={selectedCollectionId} onChange={(e) => setSelectedCollectionId(e.target.value)}>
+                                        <option value="">Select a collection...</option>
+                                        {userCollections.map(col => (
+                                            <option key={col._id} value={col._id} className="bg-[#18181B]">{col.name.toUpperCase()} ({col.questionsCount})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="p-3 bg-black/30 border border-zinc-800/50 rounded-xl">
+                                    <p className="text-[10px] leading-relaxed text-zinc-500 italic">Grouping questions helps you practice specific patterns more effectively.</p>
+                                </div>
+                                <LeetButton onClick={handleAddToCollection} text="Confirm Add" icon={CheckCircle2} className="w-full justify-center py-3" />
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -531,418 +625,418 @@ export default QuestionPage;
 
 
 
-        //if above code creates problem then just copy paste this return code bcz it is working absolutely fine
-        // return (
-    //     <div className="min-h-screen bg-black text-zinc-400 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+//if above code creates problem then just copy paste this return code bcz it is working absolutely fine
+// return (
+//     <div className="min-h-screen bg-black text-zinc-400 font-sans selection:bg-blue-500/30 overflow-x-hidden">
 
-    //         {/* FIX: Parent ko 'pointer-events-none' diya taaki ye niche ke elements (tree) ke interaction ya visuals ko block na kare */}
-    //         <div className="pt-32 flex justify-center sticky top-0 bg-transparent z-50 pointer-events-none">
+//         {/* FIX: Parent ko 'pointer-events-none' diya taaki ye niche ke elements (tree) ke interaction ya visuals ko block na kare */}
+//         <div className="pt-32 flex justify-center sticky top-0 bg-transparent z-50 pointer-events-none">
 
-    //             {/* inner div: sirf buttons jitni width lega 'w-max' ki wajah se aur blur sirf yahi apply hoga */}
-    //             <div className="inline-flex items-center gap-1 p-1 bg-[#0A0A0A]/80 backdrop-blur-md rounded-lg border border-zinc-800 scale-90 md:scale-100 w-max shadow-2xl pointer-events-auto">
-    //                 {tabs.map((tab) => (
-    //                     <button
-    //                         key={tab.name}
-    //                         onClick={() => setActiveTab(tab.name)}
-    //                         className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap ${activeTab === tab.name
-    //                             ? "bg-zinc-800 text-white shadow-sm"
-    //                             : "text-zinc-500 hover:text-zinc-300"
-    //                             }`}
-    //                     >
-    //                         {tab.icon} {tab.name}
-    //                     </button>
-    //                 ))}
-    //             </div>
-    //         </div>
-    //         {/* new */}
+//             {/* inner div: sirf buttons jitni width lega 'w-max' ki wajah se aur blur sirf yahi apply hoga */}
+//             <div className="inline-flex items-center gap-1 p-1 bg-[#0A0A0A]/80 backdrop-blur-md rounded-lg border border-zinc-800 scale-90 md:scale-100 w-max shadow-2xl pointer-events-auto">
+//                 {tabs.map((tab) => (
+//                     <button
+//                         key={tab.name}
+//                         onClick={() => setActiveTab(tab.name)}
+//                         className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap ${activeTab === tab.name
+//                             ? "bg-zinc-800 text-white shadow-sm"
+//                             : "text-zinc-500 hover:text-zinc-300"
+//                             }`}
+//                     >
+//                         {tab.icon} {tab.name}
+//                     </button>
+//                 ))}
+//             </div>
+//         </div>
+//         {/* new */}
 
-    //         <main className="max-w-7xl mx-auto px-10  relative">
-    //             {activeTab === "Problems" && (
-    //                 <div className="space-y-2">
+//         <main className="max-w-7xl mx-auto px-10  relative">
+//             {activeTab === "Problems" && (
+//                 <div className="space-y-2">
 
-    //                     {/* -------------- */}
-    //                     {/* HIGHLIGHT: Tree Size Increased + Heading Moved Extreme Left */}
-    //                     <div className="flex items-end justify-start mt-[-155px] w-full min-h-[280px] relative overflow-visible z-20">
+//                     {/* -------------- */}
+//                     {/* HIGHLIGHT: Tree Size Increased + Heading Moved Extreme Left */}
+//                     <div className="flex items-end justify-start mt-[-155px] w-full min-h-[280px] relative overflow-visible z-20">
 
-    //                         {/* 1. Hero Animation - Bigger & Aligned to Left Edge */}
-    //                         <div className="flex-none -ml-8 -mb-2 overflow-visible">
-    //                             <HeroAnimation activeTab={activeTab} />
-    //                         </div>
+//                         {/* 1. Hero Animation - Bigger & Aligned to Left Edge */}
+//                         <div className="flex-none -ml-8 -mb-2 overflow-visible">
+//                             <HeroAnimation activeTab={activeTab} />
+//                         </div>
 
-    //                         {/* 2. Heading - Shifted with Negative Margin to sit close to the Tree */}
-    //                         <div className="mb-6 -ml-16 z-40 relative">
-    //                             <motion.div
-    //                                 initial={{ opacity: 0, x: -10 }}
-    //                                 animate={{ opacity: 1, x: 0 }}
-    //                                 transition={{ duration: 0.8 }}
-    //                                 className="text-left"
-    //                             >
-    //                                 <h1 className="text-3xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent leading-none">
-    //                                     Question Bank
-    //                                 </h1>
+//                         {/* 2. Heading - Shifted with Negative Margin to sit close to the Tree */}
+//                         <div className="mb-6 -ml-16 z-40 relative">
+//                             <motion.div
+//                                 initial={{ opacity: 0, x: -10 }}
+//                                 animate={{ opacity: 1, x: 0 }}
+//                                 transition={{ duration: 0.8 }}
+//                                 className="text-left"
+//                             >
+//                                 <h1 className="text-3xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent leading-none">
+//                                     Question Bank
+//                                 </h1>
 
-    //                             </motion.div>
-    //                         </div>
+//                             </motion.div>
+//                         </div>
 
-    //                         {/* 3. Spacer */}
-    //                         <div className="flex-grow" />
+//                         {/* 3. Spacer */}
+//                         <div className="flex-grow" />
 
-    //                         {/* 4. Add Question Button */}
-
-
-
-    //                         {/* LeetButton */}
-    //                         <div className="mb-6 mr-4">
-    //                             <button
-    //                                 onClick={() => { setEditingId(null); setIsModalOpen(true); }}
-    //                                 className="group relative flex items-center gap-2 px-6 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-orange-500/50 rounded-xl transition-all duration-300 shadow-2xl shadow-black"
-    //                             >
-    //                                 {/* Hover Glow Effect Layer */}
-    //                                 <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500" />
-
-    //                                 {/* Plus Icon with Pulse Animation */}
-    //                                 <Plus
-    //                                     size={14}
-    //                                     className="text-orange-500 group-hover:scale-110 transition-transform duration-300"
-    //                                 />
-
-    //                                 {/* Button Text */}
-    //                                 <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-300 group-hover:text-white transition-colors">
-    //                                     Add Question
-    //                                 </span>
-
-    //                                 {/* Bottom subtle accent line */}
-    //                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[1px] bg-orange-500 group-hover:w-1/2 transition-all duration-500" />
-    //                             </button>
-    //                         </div>
-    //                         {/* LeetButton */}
-
-    //                     </div>
-
-    //                     {/* 3. Compact Filters Bar */}
-    //                     <div className="flex flex-col md:flex-row items-center  p-1 bg-[#18181B] border border-zinc-700 rounded-2xl">
-    //                         <div className="relative flex-grow group">
-    //                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500" size={16} />
-    //                             <input placeholder="Search title..." className="w-full bg-black border border-zinc-900 py-2 pl-10 pr-4 rounded-xl outline-none text-[11px] focus:border-zinc-700 transition-all text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-    //                         </div>
-
-    //                         <div className="flex gap-2 w-full md:w-auto">
-    //                             <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)} className="bg-black border border-zinc-800 rounded-xl px-3 py-2 text-[11px] font-bold text-zinc-400 outline-none cursor-pointer focus:border-zinc-700 appearance-none min-w-[110px]">
-    //                                 <option value="All">Platform</option>
-    //                                 <option value="leetcode">LeetCode</option>
-    //                                 <option value="gfg">GFG</option>
-    //                                 <option value="codeforces">CodeForces</option>
-    //                                 <option value="other">Other</option>
-    //                             </select>
-
-    //                             <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="bg-black border border-zinc-800 rounded-xl px-3 py-2 text-[11px] font-bold text-zinc-400 outline-none cursor-pointer focus:border-zinc-700 appearance-none min-w-[110px]">
-    //                                 <option value="All">Difficulty</option>
-    //                                 <option value="easy">Easy</option>
-    //                                 <option value="medium">Medium</option>
-    //                                 <option value="hard">Hard</option>
-    //                             </select>
-
-    //                             <button onClick={() => setIsTagsExpanded(!isTagsExpanded)} className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-bold transition-all ${isTagsExpanded ? "bg-white text-black border-white" : "bg-black border-zinc-800 text-zinc-400"}`}>
-    //                                 <Layers size={14} /> Topics
-    //                             </button>
-    //                         </div>
-    //                     </div>
-
-    //                     <AnimatePresence>
-    //                         {isTagsExpanded && (
-    //                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-[#18181B] border border-zinc-700 rounded-2xl flex flex-wrap gap-2 overflow-hidden shadow-inner">
-    //                                 <button onClick={() => setTagFilter("All")} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${tagFilter === "All" ? "bg-white text-black" : "bg-black text-zinc-600 border border-zinc-800 hover:text-white"}`}>All Topics</button>
-    //                                 {availableTags.map(tag => (
-    //                                     <button key={tag} onClick={() => setTagFilter(tag)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${tagFilter === tag ? "bg-white text-black" : "bg-black text-zinc-600 border border-zinc-800 hover:border-zinc-700"}`}>{tag}</button>
-    //                                 ))}
-    //                             </motion.div>
-    //                         )}
-    //                     </AnimatePresence>
-
-    //                     {/* 4. Main Table */}
-    //                     <div className="bg-[#18181B] border border-zinc-700 rounded-2xl overflow-hidden mt-6 shadow-sm">
-    //                         <table className="w-full text-left border-collapse">
-    //                             <thead className="bg-black/20 border-b border-zinc-700">
-    //                                 <tr>
-    //                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 w-16 text-center italic font-black">Status</th>
-    //                                     <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Title</th>
-    //                                     <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Tags</th>
-    //                                     <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Action</th>
-    //                                 </tr>
-    //                             </thead>
-    //                             <tbody className="divide-y divide-zinc-700/50 text-[17px]">
-    //                                 {filteredQuestions.map((q, idx) => (
-    //                                     <motion.tr key={q._id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-zinc-900/30 transition-all">
-    //                                         <td className="px-6 py-5 text-center">
-    //                                             <button onClick={() => handleCheckboxChange(q._id)}>
-    //                                                 {selectedIds.includes(q._id) ?
-    //                                                     <CheckSquare size={18} className="mx-auto text-blue-500 fill-blue-500/10" /> :
-    //                                                     <Square size={18} className="mx-auto text-zinc-800 hover:text-zinc-600" />
-    //                                                 }
-    //                                             </button>
-    //                                         </td>
-    //                                         <td className="px-4 py-5">
-    //                                             <div className="flex flex-col gap-1">
-    //                                                 <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors">{q.title}</span>
-    //                                                 <div className="flex items-center gap-2">
-
-    //                                                     <span className="text-[11px] font-black font-semibold uppercase text-slate-400 bg-slate-800/40 border border-slate-700/50 rounded-md shadow-sm tracking-widest px-2 py-0.5">
-    //                                                         {q.platform}
-    //                                                     </span>
-
-    //                                                     {/* Difficulty Box */}
-    //                                                     <span className={`text-[11px] font-black font-semibold uppercase px-2 py-0.5 rounded-md border tracking-widest ${q.difficulty === 'easy'
-    //                                                         ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-500'
-    //                                                         : q.difficulty === 'medium'
-    //                                                             ? 'bg-amber-950/30 border-amber-900/50 text-amber-500'
-    //                                                             : 'bg-rose-950/30 border-rose-900/50 text-rose-600'
-    //                                                         }`}>
-    //                                                         {q.difficulty}
-    //                                                     </span>
-    //                                                 </div>
-    //                                             </div>
-    //                                         </td>
-
-    //                                         <td className="px-4 py-6">
-    //                                             <div className="flex flex-wrap gap-2">
-    //                                                 {q.topics?.map((t) => (
-    //                                                     <span
-    //                                                         key={t}
-    //                                                         className="text-[12px] font-black font-semibold text-slate-400 bg-slate-800/40 border border-slate-700/50 rounded-md shadow-sm tracking-widest px-2 py-0.5"
-    //                                                     >
-    //                                                         {t.toLowerCase()}
-    //                                                     </span>
-    //                                                 ))}
-    //                                             </div>
-    //                                         </td>
-    //                                         <td className="px-6 py-5">
-    //                                             <div className="flex items-center justify-end gap-2">
-    //                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-    //                                                     <button onClick={() => { setEditingId(q._id); setFormData(q); setIsModalOpen(true); }} className="p-1.5 text-zinc-500 hover:text-white transition-colors"><Edit3 size={14} /></button>
-    //                                                     <button onClick={() => handleDelete(q._id)} className="p-1.5 text-zinc-500 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
-    //                                                 </div>
-    //                                                 <div className="flex items-center gap-2 ml-2 border-l border-zinc-900 pl-3">
-    //                                                     <a href={q.questionUrl} target="_blank" rel="noopener noreferrer"
-    //                                                         className="p-2 bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-800 hover:bg-blue-600 hover:border-blue-500">
-    //                                                         <ExternalLink size={16} />
-    //                                                     </a>
-    //                                                 </div>
-    //                                             </div>
-    //                                         </td>
-    //                                     </motion.tr>
-    //                                 ))}
-    //                             </tbody>
-    //                         </table>
-    //                     </div>
-
-    //                     {/* Pagination Bar*/}
-    //                     {pagination.totalPages > 1 && (
-    //                         <div className="mt-6 flex items-center justify-between px-2 pb-10">
-    //                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-    //                                 Total {pagination.totalQuestions} Questions
-    //                             </span>
-
-    //                             <div className="flex items-center gap-2">
-    //                                 <button
-    //                                     disabled={pagination.currentPage === 1}
-    //                                     onClick={() => fetchQuestions(pagination.currentPage - 1)}
-    //                                     className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-    //                                 >
-    //                                     <ChevronUp className="-rotate-90" size={16} />
-    //                                 </button>
-
-    //                                 <div className="flex items-center gap-1">
-    //                                     {[...Array(pagination.totalPages)].map((_, i) => {
-    //                                         const pageNum = i + 1;
-    //                                         // Sirf current page ke aas-pass ke numbers dikhane ke liye (Optional logic)
-    //                                         return (
-    //                                             <button
-    //                                                 key={pageNum}
-    //                                                 onClick={() => fetchQuestions(pageNum)}
-    //                                                 className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${pagination.currentPage === pageNum
-    //                                                         ? "bg-orange-600 border-orange-500 text-white shadow-lg shadow-orange-900/20"
-    //                                                         : "bg-[#18181B] border-zinc-800 text-zinc-500 hover:border-zinc-600"
-    //                                                     }`}
-    //                                             >
-    //                                                 {pageNum}
-    //                                             </button>
-    //                                         );
-    //                                     })}
-    //                                 </div>
-
-    //                                 <button
-    //                                     disabled={pagination.currentPage === pagination.totalPages}
-    //                                     onClick={() => fetchQuestions(pagination.currentPage + 1)}
-    //                                     className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-    //                                 >
-    //                                     <ChevronUp className="rotate-90" size={16} />
-    //                                 </button>
-    //                             </div>
-    //                         </div>
-    //                     )}
-    //                 </div>
-    //             )}
-    //         </main>
-
-    //         {/* 5. Floating Action Bar (When questions are selected) */}
-    //         <AnimatePresence>
-    //             {selectedIds.length > 0 && (
-    //                 <motion.div initial={{ y: 100, x: "-50%" }} animate={{ y: -40, x: "-50%" }} exit={{ y: 100, x: "-50%" }}
-    //                     className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-zinc-950/80 border border-zinc-800 backdrop-blur-xl px-6 py-3 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-    //                     <span className="text-zinc-100 font-bold text-sm">{selectedIds.length} Selected</span>
-    //                     <div className="h-4 w-[1px] bg-zinc-800 mx-2" />
-    //                     <button onClick={() => setIsCollectionModalOpen(true)} className="text-zinc-400 hover:text-blue-500 transition-colors">
-    //                         <Layers size={20} />
-    //                     </button>
-    //                     <button onClick={() => setSelectedIds([])} className="text-zinc-400 hover:text-rose-500 transition-colors">
-    //                         <Trash2 size={20} />
-    //                     </button>
-    //                 </motion.div>
-    //             )}
-    //         </AnimatePresence>
-
-    //         {/* Collection Modal (The Tabbed View from image 2) */}
-    //         <AnimatePresence>
-    //             {isCollectionModalOpen && (
-    //                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-    //                     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-sm bg-[#0A0A0A] border border-zinc-900 p-8 rounded-3xl">
-    //                         <div className="flex justify-between items-center mb-6">
-    //                             <div className="flex items-center gap-3">
-    //                                 <div className="p-2 bg-blue-500/10 rounded-lg"><FolderPlus size={18} className="text-blue-500" /></div>
-    //                                 <div>
-    //                                     <h3 className="text-sm font-bold text-white tracking-tight">Add to Collection</h3>
-    //                                     <p className="text-[10px] text-zinc-500">Save selected questions</p>
-    //                                 </div>
-    //                             </div>
-    //                             <button onClick={() => setIsCollectionModalOpen(false)} className="text-zinc-600 hover:text-white"><X size={18} /></button>
-    //                         </div>
-
-    //                         <div className="space-y-4">
-    //                             <div className="space-y-2">
-    //                                 <label className="text-[10px] uppercase font-bold text-zinc-600 ml-1">Target Collection</label>
-    //                                 <select className="w-full bg-black border border-zinc-900 p-3 rounded-xl text-xs outline-none text-zinc-400">
-    //                                     <option>Choose a collection...</option>
-    //                                     <option>Daily Practice</option>
-    //                                     <option>Interview Prep</option>
-    //                                 </select>
-    //                             </div>
-    //                             <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl text-[11px] text-zinc-500">
-    //                                 <span className="font-bold text-zinc-400">Tip:</span> Grouping questions helps you practice specific topics more effectively.
-    //                             </div>
-    //                             <div className="flex gap-3 pt-2">
-    //                                 <button onClick={() => setIsCollectionModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl text-[11px] font-bold text-zinc-400 hover:bg-zinc-900">Cancel</button>
-    //                                 <button className="flex-1 bg-rose-900/80 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold hover:bg-rose-800">Add to Collection</button>
-    //                             </div>
-    //                         </div>
-    //                     </motion.div>
-    //                 </div>
-    //             )}
-    //         </AnimatePresence>
+//                         {/* 4. Add Question Button */}
 
 
 
+//                         {/* LeetButton */}
+//                         <div className="mb-6 mr-4">
+//                             <button
+//                                 onClick={() => { setEditingId(null); setIsModalOpen(true); }}
+//                                 className="group relative flex items-center gap-2 px-6 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-orange-500/50 rounded-xl transition-all duration-300 shadow-2xl shadow-black"
+//                             >
+//                                 {/* Hover Glow Effect Layer */}
+//                                 <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500" />
+
+//                                 {/* Plus Icon with Pulse Animation */}
+//                                 <Plus
+//                                     size={14}
+//                                     className="text-orange-500 group-hover:scale-110 transition-transform duration-300"
+//                                 />
+
+//                                 {/* Button Text */}
+//                                 <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-300 group-hover:text-white transition-colors">
+//                                     Add Question
+//                                 </span>
+
+//                                 {/* Bottom subtle accent line */}
+//                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[1px] bg-orange-500 group-hover:w-1/2 transition-all duration-500" />
+//                             </button>
+//                         </div>
+//                         {/* LeetButton */}
+
+//                     </div>
+
+//                     {/* 3. Compact Filters Bar */}
+//                     <div className="flex flex-col md:flex-row items-center  p-1 bg-[#18181B] border border-zinc-700 rounded-2xl">
+//                         <div className="relative flex-grow group">
+//                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500" size={16} />
+//                             <input placeholder="Search title..." className="w-full bg-black border border-zinc-900 py-2 pl-10 pr-4 rounded-xl outline-none text-[11px] focus:border-zinc-700 transition-all text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+//                         </div>
+
+//                         <div className="flex gap-2 w-full md:w-auto">
+//                             <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)} className="bg-black border border-zinc-800 rounded-xl px-3 py-2 text-[11px] font-bold text-zinc-400 outline-none cursor-pointer focus:border-zinc-700 appearance-none min-w-[110px]">
+//                                 <option value="All">Platform</option>
+//                                 <option value="leetcode">LeetCode</option>
+//                                 <option value="gfg">GFG</option>
+//                                 <option value="codeforces">CodeForces</option>
+//                                 <option value="other">Other</option>
+//                             </select>
+
+//                             <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="bg-black border border-zinc-800 rounded-xl px-3 py-2 text-[11px] font-bold text-zinc-400 outline-none cursor-pointer focus:border-zinc-700 appearance-none min-w-[110px]">
+//                                 <option value="All">Difficulty</option>
+//                                 <option value="easy">Easy</option>
+//                                 <option value="medium">Medium</option>
+//                                 <option value="hard">Hard</option>
+//                             </select>
+
+//                             <button onClick={() => setIsTagsExpanded(!isTagsExpanded)} className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-bold transition-all ${isTagsExpanded ? "bg-white text-black border-white" : "bg-black border-zinc-800 text-zinc-400"}`}>
+//                                 <Layers size={14} /> Topics
+//                             </button>
+//                         </div>
+//                     </div>
+
+//                     <AnimatePresence>
+//                         {isTagsExpanded && (
+//                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 bg-[#18181B] border border-zinc-700 rounded-2xl flex flex-wrap gap-2 overflow-hidden shadow-inner">
+//                                 <button onClick={() => setTagFilter("All")} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${tagFilter === "All" ? "bg-white text-black" : "bg-black text-zinc-600 border border-zinc-800 hover:text-white"}`}>All Topics</button>
+//                                 {availableTags.map(tag => (
+//                                     <button key={tag} onClick={() => setTagFilter(tag)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${tagFilter === tag ? "bg-white text-black" : "bg-black text-zinc-600 border border-zinc-800 hover:border-zinc-700"}`}>{tag}</button>
+//                                 ))}
+//                             </motion.div>
+//                         )}
+//                     </AnimatePresence>
+
+//                     {/* 4. Main Table */}
+//                     <div className="bg-[#18181B] border border-zinc-700 rounded-2xl overflow-hidden mt-6 shadow-sm">
+//                         <table className="w-full text-left border-collapse">
+//                             <thead className="bg-black/20 border-b border-zinc-700">
+//                                 <tr>
+//                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 w-16 text-center italic font-black">Status</th>
+//                                     <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Title</th>
+//                                     <th className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Tags</th>
+//                                     <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-zinc-600 font-black">Action</th>
+//                                 </tr>
+//                             </thead>
+//                             <tbody className="divide-y divide-zinc-700/50 text-[17px]">
+//                                 {filteredQuestions.map((q, idx) => (
+//                                     <motion.tr key={q._id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-zinc-900/30 transition-all">
+//                                         <td className="px-6 py-5 text-center">
+//                                             <button onClick={() => handleCheckboxChange(q._id)}>
+//                                                 {selectedIds.includes(q._id) ?
+//                                                     <CheckSquare size={18} className="mx-auto text-blue-500 fill-blue-500/10" /> :
+//                                                     <Square size={18} className="mx-auto text-zinc-800 hover:text-zinc-600" />
+//                                                 }
+//                                             </button>
+//                                         </td>
+//                                         <td className="px-4 py-5">
+//                                             <div className="flex flex-col gap-1">
+//                                                 <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors">{q.title}</span>
+//                                                 <div className="flex items-center gap-2">
+
+//                                                     <span className="text-[11px] font-black font-semibold uppercase text-slate-400 bg-slate-800/40 border border-slate-700/50 rounded-md shadow-sm tracking-widest px-2 py-0.5">
+//                                                         {q.platform}
+//                                                     </span>
+
+//                                                     {/* Difficulty Box */}
+//                                                     <span className={`text-[11px] font-black font-semibold uppercase px-2 py-0.5 rounded-md border tracking-widest ${q.difficulty === 'easy'
+//                                                         ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-500'
+//                                                         : q.difficulty === 'medium'
+//                                                             ? 'bg-amber-950/30 border-amber-900/50 text-amber-500'
+//                                                             : 'bg-rose-950/30 border-rose-900/50 text-rose-600'
+//                                                         }`}>
+//                                                         {q.difficulty}
+//                                                     </span>
+//                                                 </div>
+//                                             </div>
+//                                         </td>
+
+//                                         <td className="px-4 py-6">
+//                                             <div className="flex flex-wrap gap-2">
+//                                                 {q.topics?.map((t) => (
+//                                                     <span
+//                                                         key={t}
+//                                                         className="text-[12px] font-black font-semibold text-slate-400 bg-slate-800/40 border border-slate-700/50 rounded-md shadow-sm tracking-widest px-2 py-0.5"
+//                                                     >
+//                                                         {t.toLowerCase()}
+//                                                     </span>
+//                                                 ))}
+//                                             </div>
+//                                         </td>
+//                                         <td className="px-6 py-5">
+//                                             <div className="flex items-center justify-end gap-2">
+//                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+//                                                     <button onClick={() => { setEditingId(q._id); setFormData(q); setIsModalOpen(true); }} className="p-1.5 text-zinc-500 hover:text-white transition-colors"><Edit3 size={14} /></button>
+//                                                     <button onClick={() => handleDelete(q._id)} className="p-1.5 text-zinc-500 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+//                                                 </div>
+//                                                 <div className="flex items-center gap-2 ml-2 border-l border-zinc-900 pl-3">
+//                                                     <a href={q.questionUrl} target="_blank" rel="noopener noreferrer"
+//                                                         className="p-2 bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-800 hover:bg-blue-600 hover:border-blue-500">
+//                                                         <ExternalLink size={16} />
+//                                                     </a>
+//                                                 </div>
+//                                             </div>
+//                                         </td>
+//                                     </motion.tr>
+//                                 ))}
+//                             </tbody>
+//                         </table>
+//                     </div>
+
+//                     {/* Pagination Bar*/}
+//                     {pagination.totalPages > 1 && (
+//                         <div className="mt-6 flex items-center justify-between px-2 pb-10">
+//                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+//                                 Total {pagination.totalQuestions} Questions
+//                             </span>
+
+//                             <div className="flex items-center gap-2">
+//                                 <button
+//                                     disabled={pagination.currentPage === 1}
+//                                     onClick={() => fetchQuestions(pagination.currentPage - 1)}
+//                                     className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+//                                 >
+//                                     <ChevronUp className="-rotate-90" size={16} />
+//                                 </button>
+
+//                                 <div className="flex items-center gap-1">
+//                                     {[...Array(pagination.totalPages)].map((_, i) => {
+//                                         const pageNum = i + 1;
+//                                         // Sirf current page ke aas-pass ke numbers dikhane ke liye (Optional logic)
+//                                         return (
+//                                             <button
+//                                                 key={pageNum}
+//                                                 onClick={() => fetchQuestions(pageNum)}
+//                                                 className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${pagination.currentPage === pageNum
+//                                                         ? "bg-orange-600 border-orange-500 text-white shadow-lg shadow-orange-900/20"
+//                                                         : "bg-[#18181B] border-zinc-800 text-zinc-500 hover:border-zinc-600"
+//                                                     }`}
+//                                             >
+//                                                 {pageNum}
+//                                             </button>
+//                                         );
+//                                     })}
+//                                 </div>
+
+//                                 <button
+//                                     disabled={pagination.currentPage === pagination.totalPages}
+//                                     onClick={() => fetchQuestions(pagination.currentPage + 1)}
+//                                     className="p-2 bg-[#18181B] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+//                                 >
+//                                     <ChevronUp className="rotate-90" size={16} />
+//                                 </button>
+//                             </div>
+//                         </div>
+//                     )}
+//                 </div>
+//             )}
+//         </main>
+
+//         {/* 5. Floating Action Bar (When questions are selected) */}
+//         <AnimatePresence>
+//             {selectedIds.length > 0 && (
+//                 <motion.div initial={{ y: 100, x: "-50%" }} animate={{ y: -40, x: "-50%" }} exit={{ y: 100, x: "-50%" }}
+//                     className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-zinc-950/80 border border-zinc-800 backdrop-blur-xl px-6 py-3 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+//                     <span className="text-zinc-100 font-bold text-sm">{selectedIds.length} Selected</span>
+//                     <div className="h-4 w-[1px] bg-zinc-800 mx-2" />
+//                     <button onClick={() => setIsCollectionModalOpen(true)} className="text-zinc-400 hover:text-blue-500 transition-colors">
+//                         <Layers size={20} />
+//                     </button>
+//                     <button onClick={() => setSelectedIds([])} className="text-zinc-400 hover:text-rose-500 transition-colors">
+//                         <Trash2 size={20} />
+//                     </button>
+//                 </motion.div>
+//             )}
+//         </AnimatePresence>
+
+//         {/* Collection Modal (The Tabbed View from image 2) */}
+//         <AnimatePresence>
+//             {isCollectionModalOpen && (
+//                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+//                     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-sm bg-[#0A0A0A] border border-zinc-900 p-8 rounded-3xl">
+//                         <div className="flex justify-between items-center mb-6">
+//                             <div className="flex items-center gap-3">
+//                                 <div className="p-2 bg-blue-500/10 rounded-lg"><FolderPlus size={18} className="text-blue-500" /></div>
+//                                 <div>
+//                                     <h3 className="text-sm font-bold text-white tracking-tight">Add to Collection</h3>
+//                                     <p className="text-[10px] text-zinc-500">Save selected questions</p>
+//                                 </div>
+//                             </div>
+//                             <button onClick={() => setIsCollectionModalOpen(false)} className="text-zinc-600 hover:text-white"><X size={18} /></button>
+//                         </div>
+
+//                         <div className="space-y-4">
+//                             <div className="space-y-2">
+//                                 <label className="text-[10px] uppercase font-bold text-zinc-600 ml-1">Target Collection</label>
+//                                 <select className="w-full bg-black border border-zinc-900 p-3 rounded-xl text-xs outline-none text-zinc-400">
+//                                     <option>Choose a collection...</option>
+//                                     <option>Daily Practice</option>
+//                                     <option>Interview Prep</option>
+//                                 </select>
+//                             </div>
+//                             <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl text-[11px] text-zinc-500">
+//                                 <span className="font-bold text-zinc-400">Tip:</span> Grouping questions helps you practice specific topics more effectively.
+//                             </div>
+//                             <div className="flex gap-3 pt-2">
+//                                 <button onClick={() => setIsCollectionModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl text-[11px] font-bold text-zinc-400 hover:bg-zinc-900">Cancel</button>
+//                                 <button className="flex-1 bg-rose-900/80 text-white px-4 py-2.5 rounded-xl text-[11px] font-bold hover:bg-rose-800">Add to Collection</button>
+//                             </div>
+//                         </div>
+//                     </motion.div>
+//                 </div>
+//             )}
+//         </AnimatePresence>
 
 
-    //         <AnimatePresence>
-    //             {isModalOpen && (
-    //                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    //                     <motion.div
-    //                         initial={{ opacity: 0, scale: 0.95 }}
-    //                         animate={{ opacity: 1, scale: 1 }}
-    //                         exit={{ opacity: 0, scale: 0.95 }}
-    //                         className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-5 rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto"
-    //                     >
-    //                         {/* Header: Slim height */}
-    //                         <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-    //                             <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-    //                                 <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-    //                                 {editingId ? 'Update' : 'New'} Question
-    //                             </h3>
-    //                             <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
-    //                                 <X size={16} />
-    //                             </button>
-    //                         </div>
 
-    //                         <form onSubmit={handleUploadOrUpdate} className="space-y-3">
-    //                             {/* Title: Compact */}
-    //                             <div className="space-y-1">
-    //                                 <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Title</label>
-    //                                 <input
-    //                                     required
-    //                                     className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
-    //                                     value={formData.title}
-    //                                     placeholder='Two Sum'
-    //                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-    //                                 />
-    //                             </div>
 
-    //                             <div className="grid grid-cols-2 gap-3">
-    //                                 <div className="space-y-1">
-    //                                     <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Platform</label>
-    //                                     <select
-    //                                         className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
-    //                                         value={formData.platform}
-    //                                         placeholder="Leetcode"
-    //                                         onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-    //                                     >
-    //                                         <option value="leetcode">LeetCode</option>
-    //                                         <option value="gfg">GFG</option>
-    //                                         <option value="gfg">Codeforces</option>
-    //                                         <option value="gfg">Other</option>
-    //                                     </select>
-    //                                 </div>
-    //                                 <div className="space-y-1">
-    //                                     <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Difficulty</label>
-    //                                     <select
-    //                                         className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
-    //                                         value={formData.difficulty}
-    //                                         onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-    //                                     >
-    //                                         <option value="easy">Easy</option>
-    //                                         <option value="medium">Medium</option>
-    //                                         <option value="hard">Hard</option>
-    //                                     </select>
-    //                                 </div>
-    //                             </div>
 
-    //                             {!editingId && (
-    //                                 <div className="space-y-3">
-    //                                     <div className="space-y-1">
-    //                                         <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">URL</label>
-    //                                         <input
-    //                                             required
-    //                                             type="url"
-    //                                             className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
-    //                                             value={formData.questionUrl}
-    //                                             placeholder='https://leetcode.com/problems'
-    //                                             onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })}
-    //                                         />
-    //                                     </div>
-    //                                     <div className="space-y-1">
-    //                                         <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Topics</label>
-    //                                         <input
-    //                                             placeholder="Array, DP..."
-    //                                             className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
-    //                                             value={formData.topics}
-    //                                             onChange={(e) => setFormData({ ...formData, topics: e.target.value })}
-    //                                         />
-    //                                     </div>
-    //                                 </div>
-    //                             )}
+//         <AnimatePresence>
+//             {isModalOpen && (
+//                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+//                     <motion.div
+//                         initial={{ opacity: 0, scale: 0.95 }}
+//                         animate={{ opacity: 1, scale: 1 }}
+//                         exit={{ opacity: 0, scale: 0.95 }}
+//                         className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-5 rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto"
+//                     >
+//                         {/* Header: Slim height */}
+//                         <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+//                             <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+//                                 <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+//                                 {editingId ? 'Update' : 'New'} Question
+//                             </h3>
+//                             <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+//                                 <X size={16} />
+//                             </button>
+//                         </div>
 
-    //                             {/* REUSABLE LEETBUTTON INTEGRATED HERE */}
-    //                             <div className="pt-2">
-    //                                 <LeetButton
-    //                                     type="submit"
-    //                                     text={editingId ? 'Save Changes' : 'Add Question'}
-    //                                     icon={editingId ? CheckCircle2 : Plus}
-    //                                     className="w-full justify-center py-3"
-    //                                 />
-    //                             </div>
-    //                         </form>
-    //                     </motion.div>
-    //                 </div>
-    //             )}
-    //         </AnimatePresence>
-    //     </div>
-    // );
+//                         <form onSubmit={handleUploadOrUpdate} className="space-y-3">
+//                             {/* Title: Compact */}
+//                             <div className="space-y-1">
+//                                 <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Title</label>
+//                                 <input
+//                                     required
+//                                     className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+//                                     value={formData.title}
+//                                     placeholder='Two Sum'
+//                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+//                                 />
+//                             </div>
+
+//                             <div className="grid grid-cols-2 gap-3">
+//                                 <div className="space-y-1">
+//                                     <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Platform</label>
+//                                     <select
+//                                         className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
+//                                         value={formData.platform}
+//                                         placeholder="Leetcode"
+//                                         onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+//                                     >
+//                                         <option value="leetcode">LeetCode</option>
+//                                         <option value="gfg">GFG</option>
+//                                         <option value="gfg">Codeforces</option>
+//                                         <option value="gfg">Other</option>
+//                                     </select>
+//                                 </div>
+//                                 <div className="space-y-1">
+//                                     <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Difficulty</label>
+//                                     <select
+//                                         className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none text-zinc-400 font-bold cursor-pointer"
+//                                         value={formData.difficulty}
+//                                         onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+//                                     >
+//                                         <option value="easy">Easy</option>
+//                                         <option value="medium">Medium</option>
+//                                         <option value="hard">Hard</option>
+//                                     </select>
+//                                 </div>
+//                             </div>
+
+//                             {!editingId && (
+//                                 <div className="space-y-3">
+//                                     <div className="space-y-1">
+//                                         <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">URL</label>
+//                                         <input
+//                                             required
+//                                             type="url"
+//                                             className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+//                                             value={formData.questionUrl}
+//                                             placeholder='https://leetcode.com/problems'
+//                                             onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })}
+//                                         />
+//                                     </div>
+//                                     <div className="space-y-1">
+//                                         <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Topics</label>
+//                                         <input
+//                                             placeholder="Array, DP..."
+//                                             className="w-full bg-black/50 border border-zinc-800 p-2 rounded-lg text-[11px] outline-none focus:border-orange-500/40 text-white transition-all"
+//                                             value={formData.topics}
+//                                             onChange={(e) => setFormData({ ...formData, topics: e.target.value })}
+//                                         />
+//                                     </div>
+//                                 </div>
+//                             )}
+
+//                             {/* REUSABLE LEETBUTTON INTEGRATED HERE */}
+//                             <div className="pt-2">
+//                                 <LeetButton
+//                                     type="submit"
+//                                     text={editingId ? 'Save Changes' : 'Add Question'}
+//                                     icon={editingId ? CheckCircle2 : Plus}
+//                                     className="w-full justify-center py-3"
+//                                 />
+//                             </div>
+//                         </form>
+//                     </motion.div>
+//                 </div>
+//             )}
+//         </AnimatePresence>
+//     </div>
+// );
