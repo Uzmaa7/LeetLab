@@ -1,5 +1,7 @@
 import {body, param, check, query} from "express-validator";
 
+
+
 const createGroupChatValidation = () => {
     return [
         body("name")
@@ -13,7 +15,6 @@ const createGroupChatValidation = () => {
     ]
 }
 
-
 const addMembersValidation = () => {
     return [
         body("chatId")
@@ -21,13 +22,14 @@ const addMembersValidation = () => {
 
         body("members")
         .notEmpty().withMessage("please enter members")
-        .isArray({min : 2}).withMessage("members must be an array")
+        .isArray({min : 1}).withMessage("members must be an array")
     ]
 }
 
 const removeMemberValidation = () => {
     return [
         body("chatId")
+        .trim()
         .notEmpty().withMessage("please provide tha Chat ID")
         .isMongoId().withMessage("Invalid chatId format"),
 

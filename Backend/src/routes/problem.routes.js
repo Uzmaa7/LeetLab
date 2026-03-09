@@ -12,3 +12,5 @@ problemRouter.put("/update-problem/:id", verifyJWT, checkAdmin, updateProblem);
 problemRouter.delete("/delete-problem/:id", verifyJWT, checkAdmin, deleteProblem);
 problemRouter.get("/get-solved-problems", verifyJWT, getAllProblemsSolvedByUser)
 export default problemRouter;
+
+

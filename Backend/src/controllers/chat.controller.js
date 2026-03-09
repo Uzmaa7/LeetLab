@@ -1,3 +1,5 @@
+//Chat in TalkTown
+
 import Chat from "../models/chat.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
@@ -240,7 +242,7 @@ const removeMember = async (req, res) => {
         //emitEvent-249
         return res.status(200).json({
             success: true,
-            message: "members removed succesfully",
+            message: "member removed succesfully",
 
         })
     } catch (error) {
@@ -588,6 +590,8 @@ const getMessage = async (req, res) => {
         });
     }
 }
+
+
 
 export {
     createGroup, getMyChats, getMyGroups, addMembers, removeMember,

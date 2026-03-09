@@ -2,7 +2,10 @@ import app from "./src/app.js";
 import dotenv from "dotenv";
 import connectdb from "./src/db/db.js";
 import { Events } from "./src/utils/constants.js";
-// import { scheduleWeeklyContests } from "./src/controllers/contest.controller.js";
+
+
+
+
 
 dotenv.config();
 
@@ -100,7 +103,8 @@ io.on("connection", (socket) => {
 
 connectdb()
     .then(() => {
-        // scheduleWeeklyContests();
+
+
         server.listen(port, () => {
             console.log(`server is listening on port ${port}`)
         })

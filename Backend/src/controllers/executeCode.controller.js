@@ -38,8 +38,8 @@ const executeCode = async (req, res) => {
         // 5. poll judge0 for results of all  submitted test cases
         const results = await pollBatchResults(tokens);
 
-        // console.log('Result------------------');
-        // console.log(results);
+        console.log('Result------------------');
+        console.log(results);
 
         // 6. analyse the result of all the test cases :
         let allTestCasePassed = true;
@@ -48,13 +48,13 @@ const executeCode = async (req, res) => {
             const expected_output = expected_outputs[i]?.trim();
             const passed = stdout === expected_output;
 
-            // console.log(`Testcase #${i+1}`);
-            // console.log(` Given Input ${stdin[i]}`);
-            // console.log(`Expected Output for the testcase is : ${expected_output}`);
-            // console.log(`Output from judge0 ${stdout}`);
+            console.log(`Testcase #${i+1}`);
+            console.log(` Given Input ${stdin[i]}`);
+            console.log(`Expected Output for the testcase is : ${expected_output}`);
+            console.log(`Output from judge0 ${stdout}`);
 
-            // console.log(`Matched : ${passed}`);
-            // console.log("======================================");
+            console.log(`Matched : ${passed}`);
+            console.log("======================================");
 
             if(!passed){
                 allTestCasePassed = false;
@@ -74,7 +74,7 @@ const executeCode = async (req, res) => {
 
             
         })
-        // console.log(detailedResults);
+        console.log(detailedResults);
 
         // 7. store this detailed analysis of testcase in db
         const submission = await Submission.create({

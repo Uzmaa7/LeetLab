@@ -2,74 +2,39 @@ import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast"
 
-import HomePage from "./pages/HomePage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
-import SignUpPage from "./pages/SignUpPage.jsx";
-import { useAuthStore } from "./store/useAuthStore.js";
+
+
+
 import { Loader } from "lucide-react";
-import Layout from "./layout/Layout";
-import AddProblem from "./pages/AddProblem.jsx";
-import AdminRoute from "./components/AdminRoutes.jsx";
-import ProblemPage from "./pages/ProblemPage.jsx";
-import Signup from "./pages/SignUpPage.jsx";
-import LandingPage from "./components/LandingPage.jsx";
+
+import SignupPage from "./pages/SignUpPage.jsx";
+import LandingPage from "./pages/LandingPage/LandingPage.jsx"
+
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
 
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  if (isCheckingAuth && !authUser) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="size-10 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-start">
-      <Toaster />
+      {/* <Toaster />
       <Routes>
-        {/* Layout ko Parent Route banayein */}
+        
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<Signup />} />
-        {/* <Route path="/" element={<Layout />}> */}
 
-          {/* Yeh saare routes ab Layout ke Outlet mein dikhenge */}
-          {/* <Route
-            index
-            element={authUser ? <HomePage /> : <Navigate to="/login" />}
-          /> */}
-
-          {/* Agar aap aur pages add karte hain (like Profile), wo bhi yahan aayenge */}
-          {/* <Route path="profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} /> */}
-
-        {/* </Route> */}
-
-        {/* Login aur Signup ko Layout se bahar rakh sakte hain agar wahan Navbar nahi chahiye */}
-        {/* <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} /> */}
-
-        {/* <Route path="/register" element={!authUser ? <Signup /> : <Navigate to="/" />} /> */}
+        {/* Problem Set Page (Jahan saari list dikhegi) */}
+        {/* <Route path="/problems" element={<ProblemPage />} />
 
 
-        {/* <Route path="/problem/:id"  element={authUser ? <ProblemPage/> : <Navigate to = "/login"/>}/> */}
+    <Route path="/add-problem" element={<AddProblem />} /> */}
+       
+        
+          
+          {/* Individual Problem Detail Page (Solving area) */}
+        {/* <Route path="/problem/:id" element={<ProblemDetail />} /> */}
+       
 
-
-        {/* <Route element = {<AdminRoute/>} >
-          <Route path="add-problem" element = {authUser ? <AddProblem/> : <Navigate to = "/" />} />
-        </Route> */}
-
-
-
-
-
-
-
-
-      </Routes>
+      {/* </Routes> */} 
     </div>
   )
 }
