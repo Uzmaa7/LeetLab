@@ -7,9 +7,9 @@ export const AvailableUserRoles = Object.values(UserRolesEnum);
 
 
 export const ProblemDifficultyLevel = {
-    EASY: "easy",
-    MEDIUM: "medium",
-    HARD: "hard"
+    EASY: "Easy",
+    MEDIUM: "Medium",
+    HARD: "Hard"
 }
 export const AvailableProblemDifficultyLevel = Object.values(ProblemDifficultyLevel);
 
@@ -28,3 +28,19 @@ export const AvailableSubmissionStatus = Object.values(SubmissionStatus);
 
 
 export const DB_NAME = "LeetLab";
+
+
+// ======= events =============================
+
+// Aise likhne se import karna aur use karna aur asaan ho jayega
+export const Events = {
+    ALERT: "ALERT",
+    REFETCH_CHATS: "REFETCH_CHATS",
+    NEW_ATTACHMENT: "NEW_ATTACHMENT",
+    NEW_MESSAGE_ALERT: "NEW_MESSAGE_ALERT",
+    NEW_REQUEST: "NEW_REQUEST",
+    NEW_MESSAGE: "NEW_MESSAGE",
+};
+
+// Agar aapko list chahiye ho validation ke liye
+export const AvailableEvents = Object.values(Events);

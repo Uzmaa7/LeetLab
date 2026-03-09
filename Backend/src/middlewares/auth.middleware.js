@@ -9,7 +9,7 @@ dotenv.config({
 
 
 export const verifyJWT = async (req, res, next) => {
-    console.log("Cookies received:", req.cookies);
+    // console.log("Cookies received:", req.cookies);
     try {
         const token = req.cookies?.accessToken || req.header
         ("Authorization")?.replace("Bearer ", "")
@@ -31,7 +31,7 @@ export const verifyJWT = async (req, res, next) => {
                 })
             }
     
-            req.user = user;
+            req.user = user;//req.user me user object hai pura
             next();
             
     } catch (error) {

@@ -5,8 +5,9 @@ import { UserRolesEnum } from "../utils/constants.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { registrationValidation } from "../validators/auth.Validators.js";
-import sendRegistartionEmail from "../services/mail.service.js";
+// import sendRegistartionEmail from "../services/mail.service.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import Chat from "../models/chat.model.js";
 
 
 
@@ -35,7 +36,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const registerUser = async (req, res) => {
 
-    const {username, fullname, email, password} = req.body;
+    const {username, fullname, email, password, role} = req.body;
 
     try{
         //find existed user
@@ -59,7 +60,7 @@ const registerUser = async (req, res) => {
             email,
             fullname,
             password: hashedPassword,
-            role: UserRolesEnum.STUDENT
+            role: role
         })
 
         if(!user){
@@ -94,7 +95,7 @@ const registerUser = async (req, res) => {
             }
         })
 
-        await sendRegistartionEmail(email, fullname);
+        // await sendRegistartionEmail(email, fullname);
     }
     catch(error){
         console.log("Error creating user", error);
@@ -106,6 +107,7 @@ const registerUser = async (req, res) => {
 
 
 const loginUser = async (req, res) => {
+    console.log("Reaching backend");
 
     const {email , password} = req.body;
 
@@ -144,10 +146,10 @@ const loginUser = async (req, res) => {
         .cookie("refreshToken",refreshToken, options)
         .json({
             message: "User logged In successfully",
-            user: {
-                loggedInUser,
+            user: loggedInUser,
                 accessToken,
-            }
+                refreshToken,
+            
         })
         
     } catch (error) {
@@ -326,7 +328,6 @@ const updateAvatar = async (req, res) => {
     }
 
 }
-
 
 
 

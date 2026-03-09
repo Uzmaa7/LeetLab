@@ -2,29 +2,32 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 1. Ye import karein
 import { User, Mail, Lock, AtSign, ArrowRight, Code2, Terminal, Trophy, Users } from 'lucide-react';
 import { gsap } from 'gsap';
-import API from '../services/auth.service.js';
+import {api} from '../services/api.services.js';
 import toast from 'react-hot-toast';
 import Background3D from "../components/Background3D";
 
-const Signup = () => {
+import { ShieldCheck } from 'lucide-react'; // Ise upar imports mein add kar lena
+
+const SignupPage = () => {
     const navigate = useNavigate();
     const formRef = useRef(null);
     const infoRef = useRef(null);
     const [loading, setLoading] = useState(false);
-    
-    
+
+
     // Exactly as per your Register Controller
     const [formData, setFormData] = useState({
         username: "",
         fullname: "",
         email: "",
-        password: ""
+        password: "",
+        role: "student",
     });
 
     useEffect(() => {
         const tl = gsap.timeline();
         tl.fromTo(infoRef.current, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.8 })
-          .fromTo(formRef.current, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.8 }, "-=0.5");
+            .fromTo(formRef.current, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.8 }, "-=0.5");
     }, []);
 
     const handleChange = (e) => {
@@ -36,7 +39,7 @@ const Signup = () => {
         setLoading(true);
         try {
             // This hits: authRouter.post("/register", ...)
-            const res = await API.post("/auth/register", formData);
+            // const res = await api.post("/auth/register", formData);
             toast.success(res.data.message || "User created successfully");
 
             // 3. Redirect Logic: 2 second baad Home page par
@@ -44,12 +47,13 @@ const Signup = () => {
                     navigate("/"); // Ya jo bhi aapka home route hai (e.g., "/home")
                 }, 2000);
 
-                
+
         } catch (error) {
             toast.error(error.response?.data?.message || "Error creating user");
         } finally {
             setLoading(false);
         }
+        // console.log(formData);
     };
 
     return (
@@ -57,7 +61,7 @@ const Signup = () => {
             <Background3D />
 
             <div className="relative z-10 h-full w-full flex">
-                
+
                 {/* LEFT SIDE: LeetLab Info */}
                 <div ref={infoRef} className="hidden lg:flex flex-col justify-center items-start w-[45%] p-12 bg-black/10 backdrop-blur-sm border-r border-white/5 h-full">
                     <div className="flex items-center gap-3 mb-10">
@@ -66,12 +70,12 @@ const Signup = () => {
                         </div>
                         <span className="text-2xl font-black tracking-tight italic text-blue-500">LEETLAB</span>
                     </div>
-                    
+
                     <h1 className="text-5xl font-extrabold leading-[1.1] mb-6 tracking-tight">
                         Code. Compete. <br />
                         <span className="text-blue-500 text-6xl font-black">Connect.</span>
                     </h1>
-                    
+
                     <div className="space-y-8 mt-4">
                         <div className="flex items-center gap-5">
                             <div className="bg-blue-600/20 p-3 rounded-xl border border-blue-500/20">
@@ -117,12 +121,37 @@ const Signup = () => {
                                     className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
                             </div>
 
+
+
                             {/* Email */}
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
                                 <input type="email" name="email" placeholder="Email Address" onChange={handleChange} value={formData.email} required
                                     className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm" />
                             </div>
+
+
+
+
+
+                            {/* Role Selection */}
+                            <div className="relative group">
+                                <ShieldCheck className="absolute left-4 top-3.5 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                <select
+                                    name="role"
+                                    onChange={handleChange}
+                                    value={formData.role}
+                                    className="w-full bg-black/40 border border-white/10 py-3.5 pl-12 pr-4 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-sm appearance-none cursor-pointer text-gray-300"
+                                >
+                                    <option value="student" className="bg-[#1a1a1a]">Register as Student</option>
+                                    <option value="admin" className="bg-[#1a1a1a]">Register as Admin</option>
+                                </select>
+                                <div className="absolute right-4 top-4 pointer-events-none text-gray-500">
+                                    <ArrowRight size={14} className="rotate-90" />
+                                </div>
+                            </div>
+
+
 
                             {/* Password */}
                             <div className="relative group">
@@ -134,6 +163,8 @@ const Signup = () => {
                             <button disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-4">
                                 {loading ? "Registering..." : "Signup"} <ArrowRight size={18} />
                             </button>
+
+
                         </form>
 
                         <div className="my-6 flex items-center gap-3">
@@ -153,4 +184,4 @@ const Signup = () => {
     );
 };
 
-export default Signup;
+export default SignupPage;

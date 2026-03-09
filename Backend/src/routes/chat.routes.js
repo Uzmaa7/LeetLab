@@ -2,6 +2,9 @@ import express from "express";
 
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { validate } from "../middlewares/validator.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
+
 
 import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, 
 sendAttachment, getChatDetails, renameChat, deleteChat, getMessage } from "../controllers/chat.controller.js";
@@ -10,8 +13,6 @@ import { createGroupChatValidation, addMembersValidation, removeMemberValidation
     sendAttachmentValidation, renameChatValidation
  } from "../validators/chat.Validators.js";
 
-import { validate } from "../middlewares/validator.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js";
 
 
 const chatRouter = express.Router();
@@ -36,8 +37,8 @@ chatRouter.get("/message/:id", verifyJWT, chatIdValidation(), validate, getMessa
 
 //get chat -> details, rename, delete
 chatRouter.route("/:id")
-.get(chatIdValidation(), validate, getChatDetails)
-.put(renameChatValidation(), validate, renameChat)
-.delete(chatIdValidation(), validate, deleteChat);
+.get(verifyJWT, chatIdValidation(), validate, getChatDetails)
+.put(verifyJWT, renameChatValidation(), validate, renameChat)
+.delete(verifyJWT, chatIdValidation(), validate, deleteChat);
 
 export default chatRouter;
