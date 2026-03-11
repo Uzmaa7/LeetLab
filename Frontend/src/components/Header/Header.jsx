@@ -31,16 +31,31 @@ const Header = () => {
             <div className="hidden md:flex items-center gap-10 text-[15px] font-medium tracking-normal capitalize">
                 {['Home', 'Explore', 'TalkTown', 'Contest'].map((item) => (
                     <div key={item} className="relative group">
-                        <a
+                        {/* <a
                             href="#"
                             className={`transition-colors ${item === 'Home' ? 'text-white' : 'text-zinc-400 hover:text-white'}`}
                         >
                             {item}
                         </a>
-                        {/* Active Underline */}
+                       
                         {item === 'Home' && (
                             <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-orange-500 rounded-full" />
-                        )}
+                        )} */}
+
+
+                        <button
+            onClick={() => {
+                if (item === 'Contest') {
+                    // Hum /user/contests par bhej rahe hain aur state mein flag set kar rahe hain
+                    navigate('/user/contests/lobby', { state: { showActions: true } });
+                } else {
+                    navigate(item === 'Home' ? '/' : `/${item.toLowerCase()}`);
+                }
+            }}
+           className={`transition-colors ${item === 'Contest' ? 'text-white' : 'text-zinc-400 hover:text-white'}`}
+        >
+            {item}
+        </button>
                     </div>
                 ))}
             </div>

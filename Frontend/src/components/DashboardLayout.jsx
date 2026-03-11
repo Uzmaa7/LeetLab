@@ -18,14 +18,15 @@ const DashboardLayout = ({
     setSearchTerm, 
     actionButton, // Dynamic Button (Add Question / Create Collection)
     filterBar,    // Dynamic Filters (Dropdowns etc.)
-    children      // Niche ka content (Table ya Grid)
+    children ,
+    hideSearch,     // Niche ka content (Table ya Grid)
 }) => {
     const navigate = useNavigate();
     // FIX: Yahan path add karna zaroori hai taaki navigate kaam kare
     const tabs = [
         { name: "Problems", icon: <Microscope size={18} />, path: "/user/questions" },
         { name: "Collections", icon: <BarChart3 size={18} />, path: "/user/collections" },
-        { name: "Contest", icon: <Swords size={18} />, path: "/user/contest" },
+        { name: "Contest", icon: <Swords size={18} />, path: "/user/contests" },
         { name: "Toppers", icon: <Trophy size={18} />, path: "/user/toppers" }
     ];
 
@@ -79,25 +80,30 @@ const DashboardLayout = ({
                 </div>
 
                 {/* 3. Search & Filters Bar (Compact Design) */}
-                <div className="flex flex-col md:flex-row items-center p-1 bg-[#18181B] border border-zinc-700 rounded-2xl">
-                    {/* Search Input (Humesha dikhega) */}
-                    <div className="relative flex-grow group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-orange-500" size={16} />
-                        <input 
-                            placeholder={`Search ${title.toLowerCase()}...`} 
-                            className="w-full bg-black border border-zinc-900 py-2 pl-10 pr-4 rounded-xl outline-none text-[11px] focus:border-zinc-700 transition-all text-white" 
-                            value={searchTerm} 
-                            onChange={(e) => setSearchTerm(e.target.value)} 
-                        />
-                    </div>
 
-                    {/* Dynamic Filter Bar (Sirf tab dikhega jab bhejenge) */}
-                    {filterBar && (
-                        <div className="flex gap-2 w-full md:w-auto px-1">
-                            {filterBar}
-                        </div>
-                    )}
-                </div>
+{/* 3. Search & Filters Bar */}
+<div className="flex flex-col md:flex-row items-center p-1 bg-[#18181B] border border-zinc-700 rounded-2xl">
+    
+    {/* HIGHLIGHT: Agar hideSearch true nahi hai, tabhi search bar dikhao */}
+    {!hideSearch && (
+        <div className="relative flex-grow group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-orange-500" size={16} />
+            <input 
+                placeholder={`Search ${title.toLowerCase()}...`} 
+                className="w-full bg-black border border-zinc-900 py-2 pl-10 pr-4 rounded-xl outline-none text-[11px] focus:border-zinc-700 transition-all text-white" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+            />
+        </div>
+    )}
+
+    {/* Dynamic Filter Bar */}
+    {filterBar && (
+        <div className={`flex gap-2 w-full px-1 ${hideSearch ? 'justify-center py-1' : 'md:w-auto'}`}>
+            {filterBar}
+        </div>
+    )}
+</div>
 
                 {/* 4. Main Page Content (Table, Cards etc.) */}
                 <div className="mt-4">
@@ -109,3 +115,26 @@ const DashboardLayout = ({
 };
 
 export default DashboardLayout;
+
+
+
+
+//  <div className="flex flex-col md:flex-row items-center p-1 bg-[#18181B] border border-zinc-700 rounded-2xl">
+//                     {/* Search Input (Humesha dikhega) */}
+//                     <div className="relative flex-grow group">
+//                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-orange-500" size={16} />
+//                         <input 
+//                             placeholder={`Search ${title.toLowerCase()}...`} 
+//                             className="w-full bg-black border border-zinc-900 py-2 pl-10 pr-4 rounded-xl outline-none text-[11px] focus:border-zinc-700 transition-all text-white" 
+//                             value={searchTerm} 
+//                             onChange={(e) => setSearchTerm(e.target.value)} 
+//                         />
+//                     </div>
+
+//                     {/* Dynamic Filter Bar (Sirf tab dikhega jab bhejenge) */}
+//                     {filterBar && (
+//                         <div className="flex gap-2 w-full md:w-auto px-1">
+//                             {filterBar}
+//                         </div>
+//                     )}
+//                 </div>

@@ -35,23 +35,16 @@ const LandingPage = () => {
 
                 {/* --- CENTERED CONTENT --- */}
                
-                <main className="relative z-10 flex-grow flex items-center justify-center px-6 pt-16 md:mt-[-40px]"> 
+                <main className="relative z-10 flex-grow flex items-center justify-center px-6 pt-0 mt-[-20px] md:mt-[-80px]">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, ease: "easeOut" }}
                         className="w-full max-w-4xl flex flex-col items-center text-center"
                     >
-                        {/* Compact Badge */}
-                        {/* <motion.div 
-                            className="inline-block px-4 py-1 mb-6 border border-white/10 bg-white/5 backdrop-blur-xl rounded-full"
-                        >
-                            <span className="text-orange-500 text-[10px] md:text-xs font-mono tracking-[0.3em] uppercase">
-                                // System.Initialize(LeetLab)
-                            </span>
-                        </motion.div> */}
+                        
 
-                        <div className="flex items-center gap-2.5 px-3 py-1 bg-[#10192A] border border-[#1E2E48] rounded-full">
+                        <div className="flex items-center gap-4 px-3 py-1 bg-[#10192A] border border-[#1E2E48] rounded-full">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -60,7 +53,7 @@ const LandingPage = () => {
                              </div>
 
                         {/* Responsive Heading: 4xl mobile, 6xl+ desktop */}
-                        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tighter">
+                        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black leading-[1.1] mb-6 mt-6 tracking-tighter">
                             <span className="bg-gradient-to-r from-white via-white/80 to-orange-500 bg-clip-text text-transparent inline-block">
                                 Make Logic Permanent
                             </span>

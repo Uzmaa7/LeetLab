@@ -18,21 +18,21 @@ const Navbar = () => {
     const navLinks = ['Home', 'Explore', 'TalkTown', 'Contest'];
 
     return (
-        <nav className="fixed top-0 w-full z-[100] px-12 py-8 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5 font-sans">
-            {/* LOGO: Exact Same Styling */}
-            <div className="flex items-center  cursor-pointer group" onClick={() => navigate('/')}>
-                
-                {/* Icon is now tilted 15 degrees to the right */}
-                 <FlaskConical 
-                    size={26} 
-                    className="text-white group-hover:text-orange-500 transition-all duration-300 transform rotate-[15deg] group-hover:rotate-[25deg]" 
-                />
-                
-                {/* Font weight adjusted for sharp professional look */}
-                <span className="text-xl font-bold tracking-tighter bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent">
-                    LeetLab
-                </span>
-            </div> 
+       <nav className="fixed top-0 w-full z-[100] px-12 py-8 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5 font-sans">
+                   {/* LOGO: White Highlight with Orange Shimmer */}
+                   <div className="flex items-center  cursor-pointer group" onClick={() => navigate('/')}>
+       
+                       {/* Icon is now tilted 15 degrees to the right */}
+                       <FlaskConical
+                           size={26}
+                           className="text-white group-hover:text-orange-500 transition-all duration-300 transform rotate-[15deg] group-hover:rotate-[25deg]"
+                       />
+       
+                       {/* Font weight adjusted for sharp professional look */}
+                       <span className="text-xl font-bold tracking-tighter bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent">
+                           LeetLab
+                       </span>
+                   </div>
 
             {/* DESKTOP NAV LINKS: Visible on md+ devices */}
             <div className="hidden md:flex items-center gap-10 text-[15px] font-medium tracking-normal capitalize">

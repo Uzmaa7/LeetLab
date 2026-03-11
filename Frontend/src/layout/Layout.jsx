@@ -6,7 +6,7 @@ const Layout = () => {
   const location = useLocation();
 
   // Jin paths par footer nahi chahiye, unhe is array mein add kar dein
-  const pathsWithoutFooter = ["/user/dashboard", "/user/questions", "/user/collections"];
+  const pathsWithoutFooter = ["/user/dashboard", "/user/questions", "/user/collections", "/user/contests", "/user/contests/lobby"];
 
   const pathsWithoutHeader = ["/user/signup", "/user/login"];
 
