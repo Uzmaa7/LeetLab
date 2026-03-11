@@ -1,45 +1,80 @@
 import mongoose, { mongo } from "mongoose";
 
 const contestSchema = new mongoose.Schema({
-    title : {
+    contestCode: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+    },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+    },
+    title: {
         type: String,
         required: true,
     },
 
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-    },
-    problems: [{
-        title: {type : String},
-        titleSlug: { type: String, required: true },
-        link: {type: String, required : true},
-        difficulty: {type: String},
-    }],
-    duration: {
+    // Ab ye sirf ID nahi, balki platform questions aur external links ka mix handle karega
+    questions: [
+        {
+            questionId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Question", // if this question is from our DB
+                required: false,
+            },
+            isExternal: {
+                type: Boolean,
+                default: false, 
+            },
+            externalUrl: String,   // Link share by user for external question
+            externalTitle: String, // title of the question if it's external (optional, can be fetched from URL if needed)
+            externalPlatform: {
+                type: String,
+                enum: ["leetcode", "gfg", "codeforces", "other"],
+            }
+        }
+    ],
+
+    durationInMin: {
         type: Number,
-        default: 60,
+        required: true,
     },
-    startTime: {
-        type: Date,
-        default: Date.now,
-    },
-    endTime: {
-        type: Date,
+    startsAt: Date,
+    endsAt: Date,
+    visibility: {
+        type: String,
+        enum: ["private", "shared", "public"],
+        default: "private",
     },
     status: {
         type: String,
-        enum: ["active", "completed"],
-        default: "active",
+        enum: ["upcoming", "live", "ended"],
+        default: "upcoming",
     },
-    results: [{
-        problemLink: String,
-        titleSlug: String,
-        isSolved: {type:Boolean, default: false},
-        solvedAt: Date
-    }]
+},
+    { timestamps: true })
 
-}, {timestamps: true});
+contestSchema.index({ endsAt: 1 });
+
+contestSchema.pre("save", function () {
+    // Only for new contests
+    if (this.isNew) {
+        this.status = "upcoming";
+    }
+});
+
+
+contestSchema.statics.expireContests = async function () {
+
+    await this.updateMany(
+        { status: "live", endsAt: { $lte: new Date() } },
+        { $set: { status: "ended" } }
+    );
+};
+
 
 const Contest = mongoose.model("Contest", contestSchema);
 
