@@ -8,17 +8,22 @@ const Layout = () => {
   // Jin paths par footer nahi chahiye, unhe is array mein add kar dein
   const pathsWithoutFooter = ["/user/dashboard", "/user/questions", "/user/collections"];
 
+  const pathsWithoutHeader = ["/user/signup", "/user/login"];
+
   // Check karein ki current path array mein hai ya nahi
+  const shouldHideHeader = pathsWithoutHeader.includes(location.pathname);
   const shouldHideFooter = pathsWithoutFooter.includes(location.pathname)
 
 
   return (
     <>
-        <Header/>
-        
-        <main className="pt-20"> 
-    <Outlet/>
-</main>
+        {/* Agar shouldHideHeader false hai, tabhi Header dikhao */}
+      {!shouldHideHeader && <Header />}
+      
+      
+      <main className={!shouldHideHeader ? "pt-20" : ""}> 
+        <Outlet />
+      </main>
 
         
         {/*if  shouldHideFooter is false then render Footer  */}
