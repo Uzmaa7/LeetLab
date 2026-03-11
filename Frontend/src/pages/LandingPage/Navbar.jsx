@@ -1,75 +1,29 @@
-// import React from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { Code2 } from 'lucide-react';
-
-// const Navbar = () => {
-//     const navigate = useNavigate();
-
-//     return (
-//         <nav className="fixed top-0 w-full z-[100] px-12 py-8 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5">
-//             {/* LOGO: White Highlight with Orange Shimmer */}
-//             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
-//                 <div className="p-2 bg-white/10 border border-white/20 rounded-lg group-hover:border-orange-500/50 transition-all">
-//                     <Code2 size={22} className="text-white" />
-//                 </div>
-                
-//                 {/* 70% White and then Orange/Amber wave */}
-//                 <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent">
-//                             LeetLab
-//                         </span>
-//             </div>
-
-//             {/* NAV LINKS: High Contrast + Animated Underline */}
-//             <div className="hidden md:flex items-center gap-10 text-[11px] font-black uppercase tracking-[3px]">
-//                 {['Home', 'Explore', 'TalkTown', 'contest'].map((item) => (
-//                     <a 
-//                         key={item}
-//                         href="#" 
-//                         className="nav-link text-white hover:text-white transition-colors opacity-100"
-//                     >
-//                         {item}
-//                     </a>
-//                 ))}
-//             </div>
-
-//             {/* AUTH BUTTONS */}
-//             <div className="flex items-center gap-8">
-//                 <button 
-//                     onClick={() => navigate('/login')}
-//                     className="text-xs font-black tracking-widest text-white hover:text-orange-400 transition-colors"
-//                 >
-//                     LOG IN
-//                 </button>
-//                 <button 
-//                     onClick={() => navigate('/signup')}
-//                     className="bg-white text-black px-8 py-3 rounded-full text-[10px] font-black uppercase hover:bg-[#ff8c00] hover:text-white transition-all shadow-xl active:scale-95"
-//                 >
-//                     Get Started
-//                 </button>
-//             </div>
-//         </nav>
-//     );
-// };
-
-// export default Navbar;
 
 
 
-import React from 'react';
+
+
+
+
+
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { Code2 } from 'lucide-react';
-import { FlaskConical } from 'lucide-react';
+import { ArrowRight, FlaskConical, Menu, X } from 'lucide-react'; // Menu icons for responsiveness
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const [isMenuOpen, setIsMenuOpen] = useState(false); // Mobile menu state
+
+    const navLinks = ['Home', 'Explore', 'TalkTown', 'Contest'];
 
     return (
         <nav className="fixed top-0 w-full z-[100] px-12 py-8 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5 font-sans">
-            {/* LOGO: White Highlight with Orange Shimmer */}
-           <div className="flex items-center  cursor-pointer group" onClick={() => navigate('/')}>
+            {/* LOGO: Exact Same Styling */}
+            <div className="flex items-center  cursor-pointer group" onClick={() => navigate('/')}>
                 
                 {/* Icon is now tilted 15 degrees to the right */}
-                <FlaskConical 
+                 <FlaskConical 
                     size={26} 
                     className="text-white group-hover:text-orange-500 transition-all duration-300 transform rotate-[15deg] group-hover:rotate-[25deg]" 
                 />
@@ -78,11 +32,11 @@ const Navbar = () => {
                 <span className="text-xl font-bold tracking-tighter bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent">
                     LeetLab
                 </span>
-            </div>
+            </div> 
 
-            {/* NAV LINKS: Pic ke mutabik Font aur Styles */}
+            {/* DESKTOP NAV LINKS: Visible on md+ devices */}
             <div className="hidden md:flex items-center gap-10 text-[15px] font-medium tracking-normal capitalize">
-                {['Home', 'Explore', 'TalkTown', 'Contest'].map((item) => (
+                {navLinks.map((item) => (
                     <div key={item} className="relative group">
                         <a 
                             href="#" 
@@ -90,7 +44,6 @@ const Navbar = () => {
                         >
                             {item}
                         </a>
-                        {/* Active Underline like in pic */}
                         {item === 'Home' && (
                             <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-orange-500 rounded-full" />
                         )}
@@ -98,21 +51,71 @@ const Navbar = () => {
                 ))}
             </div>
 
-            {/* AUTH BUTTONS: Clean Sans-serif Font */}
-            <div className="flex items-center gap-8">
+            {/* AUTH BUTTONS: Correct Redirects and Desktop View */}
+            <div className="hidden md:flex items-center gap-8">
                 <button 
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/user/login')} // Corrected Route
                     className="text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
                 >
                     Log in
                 </button>
-                <button 
-                    onClick={() => navigate('/signup')}
-                    className="bg-white text-black px-8 py-2.5 rounded-full text-sm font-bold hover:bg-orange-600 hover:text-white transition-all shadow-xl active:scale-95"
-                >
-                    Get Started
-                </button>
+               <button 
+    onClick={() => navigate('/user/signup')}
+
+    className="group relative px-8 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-orange-500/50 rounded-xl transition-all duration-300 outline-none focus:outline-none"
+    style={{ 
+        boxShadow: 'none', 
+        filter: 'none', 
+        backdropFilter: 'none',
+        WebkitBoxShadow: 'none'
+    }}
+>
+    {/* Orange subtle glow layer */}
+    <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-500 pointer-events-none shadow-none" />
+    
+    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-300 group-hover:text-white transition-colors relative z-10">
+        Get Started
+    </span>
+
+    {/* Bottom subtle orange line on hover */}
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[1px] bg-orange-500 group-hover:w-1/2 transition-all duration-500" />
+</button>
             </div>
+
+            {/* MOBILE HAMBURGER ICON */}
+            <div className="md:hidden z-[110]" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? <X className="text-white" /> : <Menu className="text-white" />}
+            </div>
+
+            {/* MOBILE MENU OVERLAY */}
+            {isMenuOpen && (
+                <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-8 z-[100] md:hidden">
+                    {navLinks.map((item) => (
+                        <a 
+                            key={item}
+                            href="#" 
+                            onClick={() => setIsMenuOpen(false)}
+                            className="text-2xl font-bold text-zinc-400 hover:text-white"
+                        >
+                            {item}
+                        </a>
+                    ))}
+                    <div className="flex flex-col items-center gap-6 mt-4">
+                        <button 
+                            onClick={() => { navigate('/user/login'); setIsMenuOpen(false); }}
+                            className="text-lg font-semibold text-zinc-400"
+                        >
+                            Log in
+                        </button>
+                        <button 
+                            onClick={() => { navigate('/user/signup'); setIsMenuOpen(false); }}
+                            className="bg-white text-black px-10 py-3 rounded-full text-lg font-bold"
+                        >
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };
