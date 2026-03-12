@@ -126,6 +126,67 @@ const getCreatedContests = asyncHandler(async (req, res) => {
     );
 });
 
+const getJoinedContests = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+     const p = Math.max(1, Number(page));
+    const l = Math.min(50, Number(limit));
+ 
+    const skip =  (p - 1) * l;
+
+    const basePipeline = [
+        { $match: { userId: req.user._id } },
+        {
+            $lookup: {
+                from: "contests",
+                localField: "contestId",
+                foreignField: "_id",
+                as: "contest"
+            }
+        },
+        {   $unwind: "$contest" },
+        {
+            $match: { "contest.owner": { $ne: req.user._id } }
+        }
+    ];
+
+    const [data, countResult] = await Promise.all([
+        ContestParticipant.aggregate([
+            ...basePipeline,
+            { $sort: { joinedAt: -1 } },
+            { $skip: skip },
+            { $limit: l },
+            {
+                $project: {
+                    _id: "$contest._id",
+                    title: "$contest.title",
+                    status: "$contest.status",
+                    startsAt: "$contest.startsAt",
+                    endsAt: "$contest.endsAt",
+                    visibility: "$contest.visibility"
+                }
+            }
+        ]),
+
+        ContestParticipant.aggregate([
+            ...basePipeline,
+            { $count: "total" }
+        ])
+    ]);
+    const total = countResult[0]?.total || 0;
+
+    return res.json(
+        new ApiResponse(200, {
+        contests: data,
+        meta: {
+            page: p,
+            limit: l,
+            total,
+            pages: Math.ceil(total / l)
+        }
+        }, "Joined contests")
+    );
+});
+
 
 // (host starts contest globally)
 
