@@ -97,7 +97,34 @@ const createContest = asyncHandler(async (req, res) => {
     );
 });
 
+const getCreatedContests = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+    const p = Math.max(1, Number(page));
+    const l = Math.min(50, Number(limit));
+ 
+    const skip =  (p - 1) * l;
 
+    const [contests, total] = await Promise.all([
+        Contest.find({ owner: req.user._id})
+            .select("title status startsAt endsAt visibility")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(l),
+        Contest.countDocuments({ owner: req.user._id })
+    ]);
+
+    return res.json(
+        new ApiResponse(200,  contests, {
+       
+        meta: {
+            page: p,
+            limit: l,
+            total,
+            pages: Math.ceil(total / l)
+        }
+        }, "Created contests")
+    );
+});
 
 
 // (host starts contest globally)
