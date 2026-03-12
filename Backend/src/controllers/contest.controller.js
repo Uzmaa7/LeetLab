@@ -188,6 +188,56 @@ const getJoinedContests = asyncHandler(async (req, res) => {
 });
 
 
+const getAllContests = asyncHandler(async (req, res) => {
+    const { page, limit, status } = req.query;
+     const p = Math.max(1, Number(page));
+    const l = Math.min(50, Number(limit));
+ 
+    const skip =  (p - 1) * l;
+
+    // 1. Get IDs of contests the user is participating in (Lightweight query)
+    const participatedContestIds = await ContestParticipant.find({ 
+        userId: req.user._id 
+    }).distinct('contestId');
+
+    // 2. Build filter: Created by Me OR Joined by Me
+    const matchStage = {
+        $or: [
+            { owner: req.user._id },                     // Created by user
+            { _id: { $in: participatedContestIds } }     // Joined by user
+        ]
+    };
+
+    // Add optional status filter if provided (e.g., ?status=live)
+    if (status) {
+        matchStage.status = status;
+    }
+
+    // 3. Fetch Data & Count in parallel
+    const [contests, total] = await Promise.all([
+        Contest.find(matchStage)
+            .select("title status startsAt endsAt visibility") // Only fetch needed fields
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(l)
+            .lean(), // Convert to plain JS objects (faster)
+        Contest.countDocuments(matchStage)
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            contests,
+            meta: {
+                page: p,
+                limit: l,
+                total,
+                pages: Math.ceil(total / l)
+            }
+        }, "All my contests fetched successfully")
+    );
+});
+
+
 // (host starts contest globally)
 
 
