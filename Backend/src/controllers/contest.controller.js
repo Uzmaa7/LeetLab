@@ -237,6 +237,55 @@ const getAllContests = asyncHandler(async (req, res) => {
     );
 });
 
+const getActiveContests = asyncHandler(async (req, res) => {
+
+    const { page, limit } = req.query;
+     const p = Math.max(1, Number(page));
+    const l = Math.min(50, Number(limit));
+ 
+    const skip =  (p - 1) * l;
+
+    // 1. Get IDs of contests the user is participating in
+    const participatedContestIds = await ContestParticipant.find({ 
+        userId: req.user._id 
+    }).distinct('contestId');
+
+    // 2. Create a filter that matches:
+    // (Created by Me OR Participated by Me) AND (Is Active)
+    const filter = {
+        $and: [
+            {
+                $or: [
+                    { owner: req.user._id },                     // Created by user
+                    { _id: { $in: participatedContestIds } }     // Participated by user
+                ]
+            },
+            { status: { $in: ["upcoming", "live"] } }           // Must be active
+        ]
+    };
+    
+    const [contests, total] = await Promise.all([
+        Contest.find(filter)
+        .select("title status startsAt endsAt visibility")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(l),
+        Contest.countDocuments(filter)
+    ]);
+
+    return res.json(
+        new ApiResponse(200, {
+        contests,
+        meta: {
+            page: p,
+            limit: l,
+            total,
+            pages: Math.ceil(total / l)
+        }
+        }, "Active contests")
+    );
+});
+
 
 // (host starts contest globally)
 
