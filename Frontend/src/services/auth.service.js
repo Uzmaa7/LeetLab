@@ -5,9 +5,9 @@ import { api } from "./api.services";
 
 
 export const loginService = async (data) => {
-    console.log(data);
+    // console.log(data);
     const response = await  api.post("/auth/login", data)
-    // console.log(response.data);
+     console.log(response.data);
 
     return response.data;
     // .then(res => res.data.user)

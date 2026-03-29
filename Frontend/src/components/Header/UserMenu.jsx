@@ -2,11 +2,24 @@ import { useState } from 'react';
 import { User, LogOut, PlusSquare, ChevronDown } from 'lucide-react';
 import { useUserContext } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { logoutService } from '../../services/auth.service.js';
 
 const UserMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
+
     const { user, logout } = useUserContext();
+
     const navigate = useNavigate();
+
+    const logOutHandler = async () => {
+    try {
+      await logoutService();
+    } finally {
+      logout();
+      
+      navigate('/');
+    }
+  };
 
     return (
         <div className="relative">
@@ -41,7 +54,7 @@ const UserMenu = () => {
 
                     <div className="h-[1px] bg-white/5 my-2" />
                     
-                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/5 transition-colors">
+                    <button onClick={logOutHandler} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/5 transition-colors">
                         <LogOut size={16} /> Logout
                     </button>
                 </div>
