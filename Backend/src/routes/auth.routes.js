@@ -17,7 +17,9 @@ authRouter.post("/login", loginValidation(), validate,  loginUser);
 
 // ======Secured routes=====================//
 authRouter.post("/logout", verifyJWT, logoutUser);
+
 authRouter.post("/refresh-token", refreshAccessToken);
+
 authRouter.get("/check", verifyJWT, check);
 authRouter.post("/change-password", verifyJWT, changePasswordValidation(), validate, changePassword);
 // authRouter.get("/check");

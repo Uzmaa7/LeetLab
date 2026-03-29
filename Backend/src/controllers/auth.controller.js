@@ -69,21 +69,23 @@ const registerUser = async (req, res) => {
             })
         }
 
-        const token = jwt.sign(
-            {_id: user._id},
-            process.env.JWT_SECRET,
-            {expiresIn: "7d"} 
-        )
+        // const token = jwt.sign(
+        //     {_id: user._id},
+        //     process.env.JWT_SECRET,
+        //     {expiresIn: "15m"} 
+        // )
 
-        res.cookie("accessToken", token,
-            {
-                httpOnly:true,
+       
+
+        // res.cookie("accessToken", token,
+        //     {
+        //         httpOnly:true,
                 
-                sameSite: "lax", 
-                secure: false,
-                maxAge: 1000 * 60 * 60 * 24 * 7 // 7days
-            }
-        )
+        //         sameSite: "lax", 
+        //         secure: false,
+        //         maxAge: 1000 * 60 * 60 * 24 * 7 // 7days
+        //     }
+        // )
 
         res.status(201).json({
             message: "User created successfully",
@@ -330,34 +332,19 @@ const updateAvatar = async (req, res) => {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //======endPoint so that user can refresh its access token=================
 // as soon as your access token expires you can request for new access token
 //for this u need to send your refresh token -> we will match it with db refresh token 
 // and then refresh your both the tokens
 const refreshAccessToken  = async ( req, res) => {
 
+    console.log("refreshAccessToken endpoint hit");
+
     const incomingRefreshToken = req.cookies.refreshToken
+
+    if (!incomingRefreshToken || typeof incomingRefreshToken !== 'string') {
+    return res.status(401).json({ message: "Refresh token is missing or malformed" });
+}
 
     if(!incomingRefreshToken){
         return res.status(401).json({
@@ -366,27 +353,37 @@ const refreshAccessToken  = async ( req, res) => {
     }
 
     try {
-        
+       
         const decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+      
+      
         if(!decodedRefreshToken){
             return res.status(401).json({
                 message: "Invalid refresh token"
             })
         }
+      
 
         //decodedRefreshToken has _id in its payload
-        const user = await User.findById(decodedRefreshToken?._id);
+        const user = await User.findOne(
+            {
+                _id : decodedRefreshToken._id,
+                refreshToken : incomingRefreshToken
+            }
+        );
+      
         if(!user){
             return res.status(401).json({
                 message: "Invalid refresh token"
             })
         }
-
-        
+       
         if(incomingRefreshToken !== user?.refreshToken){
-            return res.status(401).json({
-                message: "refresh token is expired or used"
-            })
+            // return res.status(401).json({
+            //     message: "refresh token is expired or used"
+            // })
+           
+            user.refreshToken = undefined;
         }
 
         //generate new tokens
@@ -395,19 +392,23 @@ const refreshAccessToken  = async ( req, res) => {
             httpOnly: true,
             secure: true,
         }
+       
+       const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id);
 
-        const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id);
 
         return res
         .status(200)
-        .cookie("accessToken", accessToken)
-        .cookie("refreshToken", newRefreshToken)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json({
             message: "Access token refreshed",
-            tokens: {accessToken, refreshToken: newRefreshToken}
+            tokens: {accessToken, refreshToken},
+            user,
+
         })
         
     } catch (error) {
+      
         console.log("refreshAccessToken error", error);
         res.status(500).json({
             message: "refreshAccessToken error"

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { api, setAuthToken } from "../services/api.services";
-// import { refreshTokenService } from "../services/auth.services";
+import { refreshTokenService } from "../services/auth.service.js"
 
 const UserContext = createContext(null);
 
@@ -36,32 +36,34 @@ export const UserContextProvider = ({ children }) => {
         localStorage.clear(); // Clear local storage
     };
 
-    // useEffect(() => {
-    //     const bootstrapAuth = async () => {
-    //         try {
-    //             // 1. Try to refresh using Cookies (Best Security)
-    //             const res = await refreshTokenService();
-    //             setAuth(res.accessToken, res.user, res.refreshToken);
-    //         } catch (err) {
-    //             // 2. FALLBACK: Check LocalStorage (For Mobile/Safari)
-    //             const storedToken = localStorage.getItem("accessToken");
-    //             const storedUser = localStorage.getItem("user");
+    useEffect(() => {
+        const bootstrapAuth = async () => {
+            try {
+                // 1. Try to refresh using Cookies (Best Security)
+                const res = await refreshTokenService();
 
-    //             if (storedToken && storedUser) {
-    //                 try {
-    //                     setAuth(storedToken, JSON.parse(storedUser));
-    //                 } catch (e) {
-    //                     console.error("Failed to parse stored user", e);
-    //                     logout();
-    //                 }
-    //             }
-    //         } finally {
-    //             setIsAuthReady(true);
-    //         }
-    //     };
+                setAuth(res.tokens.accessToken, res.user,  res.tokens.refreshToken);
 
-    //     bootstrapAuth();
-    // }, []);
+            } catch (err) {
+                // 2. FALLBACK: Check LocalStorage (For Mobile/Safari)
+                const storedToken = localStorage.getItem("accessToken");
+                const storedUser = localStorage.getItem("user");
+
+                if (storedToken && storedUser) {
+                    try {
+                        setAuth(storedToken, JSON.parse(storedUser));
+                    } catch (e) {
+                        console.error("Failed to parse stored user", e);
+                        logout();
+                    }
+                }
+            } finally {
+                setIsAuthReady(true);
+            }
+        };
+
+        bootstrapAuth();
+    }, []);
 
     return (
         <UserContext.Provider value={{ user, setUser, authToken, setAuth, logout, isAuthReady, setIsAuthReady, isAuthenticated }}>
