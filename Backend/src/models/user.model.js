@@ -82,28 +82,28 @@ const userSchema = new mongoose.Schema({
     refreshToken: {
         type: String,
     },
-    //all the problems created by admin
+    // all the problems created by admin
     problems: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Problem"
     }],
 
-    submission: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Submission"
-        }
-    ],
+    // submission: [
+    //     {
+    //         type: mongoose.Schema.Types.ObjectId,
+    //         ref: "Submission"
+    //     }
+    // ],
 
-    solvedProblems: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProblemSolved"
-    }],
+    // solvedProblems: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "ProblemSolved"
+    // }],
 
-    lists: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "List"
-    }],
+    // lists: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "List"
+    // }],
 }, {timestamps:true});
 
 

@@ -133,7 +133,8 @@ const loginUser = async (req, res) => {
         //generate access and refresh tokens
         const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-        const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken -problems -avatar.public_id")
+        console.log("loggedInUser -> ", loggedInUser);
 
         //send these tokens to cookies
         const options = {
