@@ -23,3 +23,10 @@ export const sendRequestService = async (receiverId) => {
     const response = await api.put("/friends/send-request", { receiverId });
     return response.data;
 };
+
+// Get all friends (with optional chatId for filtering)
+export const getMyFriendsService = async (chatId = "") => {
+    // Agar chatId hai toh '?chatId=xyz' jud jayega, warna khali string
+    const response = await api.get(`/friends/my-friends${chatId ? `?chatId=${chatId}` : ""}`);
+    return response.data;
+};

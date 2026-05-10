@@ -1,10 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useChat } from '../../contexts/ChatContext';
+import { UserPlus } from 'lucide-react';
 import ChatWindow from './ChatWindow';
+
+import CreateGroupModal from './CreateGroupModal';
 
 const DirectMessages = () => {
     const { chats, loading, activeChat, setActiveChat } = useChat();
+
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
     if (loading) return <div className="text-white p-10">Loading Chats...</div>;
 
@@ -12,8 +17,18 @@ const DirectMessages = () => {
         <div className="flex w-full h-screen bg-black overflow-hidden border-l border-zinc-800">
             {/* Left Column: Chat List */}
             <div className="w-full md:w-80 lg:w-[350px] border-r border-zinc-800 flex flex-col">
-                <div className="p-6">
-                    <h2 className="text-xl font-bold text-white tracking-tight mb-4">Messages</h2>
+                {/* Header Section with New Group Icon */}
+                <div className="p-6 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white tracking-tight">Messages</h2>
+                    
+                    {/*  New Group Icon */}
+                    <button 
+                        onClick={() => setIsGroupModalOpen(true)}
+                        className="p-2 hover:bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
+                        title="New Group"
+                    >
+                        <UserPlus size={22} strokeWidth={1.5} />
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-2">
@@ -53,6 +68,14 @@ const DirectMessages = () => {
                     </div>
                 )}
             </div>
+
+
+            {/* Create Group Modal Render */}
+            {isGroupModalOpen && (
+                <CreateGroupModal onClose={() => setIsGroupModalOpen(false)} />
+            )}
+
+
         </div>
     );
 };
