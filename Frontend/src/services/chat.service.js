@@ -49,3 +49,25 @@ export const deleteChatService = async (chatId) => {
     const response = await api.delete(`/chats/${chatId}`);
     return response.data;
 };
+
+export const getChatDetailsService = async (chatId, populate = false) => {
+    const response = await api.get(`/chats/${chatId}${populate ? '?populate=true' : ''}`);
+    return response.data;
+};
+
+
+
+export const getMessagesService = async (chatId, page = 1) => {
+    const response = await api.get(`/chats/message/${chatId}?page=${page}`);
+    return response.data;
+};
+
+
+export const sendAttachmentService = async (formData) => {
+    const response = await api.post("/chats/send-attachment", formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
