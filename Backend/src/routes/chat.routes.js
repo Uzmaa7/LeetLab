@@ -7,10 +7,10 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 
 import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, 
-sendAttachment, getChatDetails, renameChat, deleteChat, getMessage } from "../controllers/chat.controller.js";
+sendAttachment, getChatDetails, renameChat, deleteChat, getMessage, sendTextMessage } from "../controllers/chat.controller.js";
 
 import { createGroupChatValidation, addMembersValidation, removeMemberValidation, chatIdValidation, 
-    sendAttachmentValidation, renameChatValidation
+    sendAttachmentValidation, renameChatValidation, messageValidation
  } from "../validators/chat.Validators.js";
 
 
@@ -32,7 +32,11 @@ chatRouter.delete("/exit-group/:id", verifyJWT, chatIdValidation(), validate,  e
 
 chatRouter.post("/send-attachment", verifyJWT, sendAttachmentValidation, validate, upload.array("files", 5),  sendAttachment);
 
+chatRouter.post("/message", verifyJWT, messageValidation(), validate, sendTextMessage);
+
 chatRouter.get("/message/:id", verifyJWT, chatIdValidation(), validate, getMessage);
+
+
 
 
 //get chat -> details, rename, delete

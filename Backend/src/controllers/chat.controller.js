@@ -593,7 +593,58 @@ const getMessage = async (req, res) => {
 
 
 
+
+const sendTextMessage = async (req, res) => {
+    const { chatId, content } = req.body;
+
+    try {
+        // 1. Basic Validation
+        if (!content || content.trim() === "") {
+            return res.status(400).json({
+                success: false,
+                message: "Message content cannot be empty"
+            });
+        }
+
+        // 2. Check if Chat exists (Optional but recommended)
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found"
+            });
+        }
+
+        // 3. Create the message
+        const message = await Message.create({
+            sender: req.user._id,
+            chat: chatId,
+            content: content.trim(),
+            attachments: [] // Simple text message hai toh empty array
+        });
+
+        // 4. Populate sender details for immediate UI update
+        const populatedMessage = await Message.findById(message._id)
+            .populate("sender", "fullname avatar");
+
+        return res.status(201).json({
+            success: true,
+            message: "Message sent successfully",
+            data: populatedMessage
+        });
+
+    } catch (error) {
+        console.error("sendTextMessage Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error while sending message"
+        });
+    }
+};
+
+
+
 export {
     createGroup, getMyChats, getMyGroups, addMembers, removeMember,
-    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat,getMessage
+    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat,getMessage, sendTextMessage
 };

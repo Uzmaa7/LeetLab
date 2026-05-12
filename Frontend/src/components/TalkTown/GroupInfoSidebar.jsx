@@ -92,7 +92,7 @@ const GroupInfoSidebar = ({ chatId, onClose, onDeleteSuccess }) => {
                         {chatDetails.members.map((member) => (
                             <div key={member._id} className="flex items-center justify-between group">
                                 <div className="flex items-center gap-3">
-                                    {/* Member Image Fix */}
+                                    {/* Member Image  */}
                                     <img src={member.avatar} className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-800 object-cover" alt="" />
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium text-zinc-200">

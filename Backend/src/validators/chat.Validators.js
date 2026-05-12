@@ -74,5 +74,12 @@ const renameChatValidation = () => {
     ]
 }
 
+const messageValidation = () => {
+    return[
+    body("chatId").notEmpty().withMessage("Chat ID is required").isMongoId(),
+    body("content").notEmpty().withMessage("Content cannot be empty")
+];
+}
+
 export {createGroupChatValidation, addMembersValidation, removeMemberValidation,
-      sendAttachmentValidation,chatIdValidation, renameChatValidation };
+      sendAttachmentValidation,chatIdValidation, renameChatValidation, messageValidation };
