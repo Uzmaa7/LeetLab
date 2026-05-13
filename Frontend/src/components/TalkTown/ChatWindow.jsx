@@ -21,6 +21,17 @@ const ChatWindow = ({ activeChat }) => {
 
     const { socket } = useSocket();
 
+    // --- NAYA FUNCTION: Sirf ek message add karne ke liye ---
+    const handleLocalAppend = useCallback((newMsg) => {
+        setMessages((prev) => {
+            // Check taaki duplicate na ho (socket aur API dono se aa sakta hai)
+            const exists = prev.find(m => m._id === newMsg._id);
+            if (exists) return prev;
+            return [...prev, newMsg];
+        });
+    }, []);
+
+
     useEffect(() => {
         if (!socket) return;
 
@@ -44,7 +55,9 @@ const ChatWindow = ({ activeChat }) => {
     const fetchMessages = useCallback(async () => {
         if (!activeChat?._id) return;
         
-        setLoading(true);
+        // Sirf tab loading dikhayein jab messages khali hon
+        if (messages.length === 0) setLoading(true);
+
         try {
             // Page 1 fetch for now
             const data = await getMessagesService(activeChat._id, 1);
@@ -90,7 +103,7 @@ const ChatWindow = ({ activeChat }) => {
                {/* ChatInput  */}
                 <ChatInput 
                     chatId={activeChat._id} 
-                    onMessageSent={fetchMessages} 
+                    onMessageSent={handleLocalAppend}
                     chatMembers={activeChat.members}
                 />
 

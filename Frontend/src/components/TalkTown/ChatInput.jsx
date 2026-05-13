@@ -46,7 +46,7 @@ const ChatInput = ({ chatId, onMessageSent, chatMembers }) => {
                
 
                 setMessage(""); // Input clear
-                if (onMessageSent) onMessageSent();
+                if (onMessageSent) onMessageSent(messageData);
             }
         } catch (err) {
             console.error("Failed to send message:", err);

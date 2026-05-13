@@ -11,7 +11,7 @@ const MessageList = ({ messages, onMessageDeleted }) => {
 
    
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }, [messages]);
 
 
@@ -31,7 +31,7 @@ const MessageList = ({ messages, onMessageDeleted }) => {
     };
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 overflow-x-hidden min-h-full">
             {messages.map((msg, index) => {
                 const isMe = msg.sender?._id === currentUser?._id;
 
@@ -72,9 +72,10 @@ const MessageList = ({ messages, onMessageDeleted }) => {
                     </div>
                 );
             })}
-            <div ref={bottomRef} />
+            <div ref={bottomRef} className='h-2'/>
         </div>
     );
+
 };
 
 export default MessageList;
