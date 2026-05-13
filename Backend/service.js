@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import connectdb from "./src/db/db.js";
 import { Events } from "./src/utils/constants.js";
 import User from "./src/models/user.model.js";
-
+import Message from "./src/models/message.model.js";
 dotenv.config();
 
 
@@ -49,7 +49,7 @@ io.use(async (socket, next) => {
             return next(new Error("User not found"));
         }
 
-       
+
         socket.user = {
             ...decoded,
             fullname: user.fullname
@@ -93,15 +93,37 @@ io.on("connection", async (socket) => {
                 io.to(recipientSocketId).emit("MESSAGE_RECEIVED", {
                     chatId,
                     message: {
-                    _id: message._id,
-                    content: message.content,
-                    sender: message.sender, 
-                    createdAt: message.createdAt || new Date().toISOString(),
-                    chat: chatId
-                }
+                        _id: message._id,
+                        content: message.content,
+                        sender: message.sender,
+                        createdAt: message.createdAt || new Date().toISOString(),
+                        chat: chatId
+                    }
                 });
             }
         });
+    });
+
+    // 3. Listen for "Mark as Read" events
+    socket.on("MARK_AS_READ", async(data) => {
+        const { chatId, senderId, userId } = data;
+
+        // send notification to the sender that their message has been seen
+        try {
+            // Update the status of all messages from 'sent' to 'seen' for this chat and sender
+            await Message.updateMany(
+                { chat: chatId, sender: senderId, status: "sent" },
+                { $set: { status: "seen" } }
+            );
+
+            // Notify the sender about the seen status update
+            const senderSocketId = userSocketIDs.get(senderId);
+            if (senderSocketId) {
+                io.to(senderSocketId).emit("MESSAGE_SEEN_UPDATE", { chatId, seenBy: userId });
+            }
+        } catch (err) {
+            console.error("Error updating seen status:", err);
+        }
     });
 
     socket.on("disconnect", () => {
