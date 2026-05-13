@@ -5,6 +5,7 @@ import './index.css'
 import {router} from "./routes/index.routes" 
 import { UserContextProvider } from './contexts/UserContext.jsx'
 import { ChatProvider } from './contexts/ChatContext.jsx'
+import { SocketProvider } from './contexts/SocketContext.jsx'
 
 
 
@@ -14,11 +15,15 @@ createRoot(document.getElementById('root')).render(
     
     <UserContextProvider>
 
-      <ChatProvider>
+      <SocketProvider>
 
-        <RouterProvider router={router}/>
+        <ChatProvider>
 
-      </ChatProvider>
+          <RouterProvider router={router}/>
+
+        </ChatProvider>
+        
+      </SocketProvider>
       
     </UserContextProvider>
     

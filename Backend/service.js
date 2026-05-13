@@ -2,10 +2,7 @@ import app from "./src/app.js";
 import dotenv from "dotenv";
 import connectdb from "./src/db/db.js";
 import { Events } from "./src/utils/constants.js";
-
-
-
-
+import User from "./src/models/user.model.js";
 
 dotenv.config();
 
@@ -13,89 +10,108 @@ dotenv.config();
 const port = process.env.PORT || 8000;
 
 // ----------------------------------------------------------
+import jwt from "jsonwebtoken";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import Message from "./src/models/message.model.js";
-// import {v4 as uuid} from "uuid";
-
-const userSocketIDs = new Map();
 
 const server = createServer(app)
 
-const getSockets = (members) => {
-    const sockets = members.map((user) => userSocketIDs.get(user._id.toString()));
-    return sockets;
-}
+const userSocketIDs = new Map(); // { userId: socketId }
 
-// // Socket initialization
+// Socket initialization
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Aapke frontend ka URL (e.g., localhost:5173)
+        origin: "http://localhost:5173",
         methods: ["GET", "POST"],
         credentials: true
     }
 });
 
-io.use((socket, next) => {
-    
-})
 
+// Socket Middleware to verify JWT
+io.use(async (socket, next) => {
+    try {
 
-// Ye "connection" event tab trigger hota hai jab koi user online aata hai
-io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id); // Har user ki ek unique ID hoti hai
+        const token = socket.handshake.auth?.token ||
+            socket.handshake.headers?.token ||
+            socket.handshake.query?.token;
 
-    const user = {
-        _id: "abcd",
-        fullname: "efghi"
+        if (!token) {
+            console.log("Socket Auth Failed: No Token found");
+            return next(new Error("Authentication error: No token provided"));
+        }
+
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+        const user = await User.findById(decoded._id).select("fullname");
+
+        if (!user) {
+            return next(new Error("User not found"));
+        }
+
+       
+        socket.user = {
+            ...decoded,
+            fullname: user.fullname
+        };
+
+        console.log(`Socket Verified for: ${socket.user.fullname}`);
+        next();
+
+    } catch (err) {
+        console.error("Socket JWT Error:", err.message);
+        return next(new Error("Authentication error: Invalid Token"));
     }
+});
 
-    userSocketIDs.set(user._id.toString(), socket.id);
+//trigeers when a user come online
+io.on("connection", async (socket) => {
+    const userId = socket.user._id.toString();
 
-    socket.on(Events.NEW_MESSAGE, async ({ chatId, members, message }) => {
+    const user = await User.findById(userId).select("fullname");
+    const userName = user?.fullname || "Unknown User";
 
-        const msgForRealTime = {
-            content: message,
-            // _id: uuid(),
-            sender: {
-                _id: user._id,
-                fullname: user._fullname,
-            },
-            chat: chatId,
-            createdAt: new Date().toISOString(),
+    //  save the userId and socketId in map
+    userSocketIDs.set(userId, socket.id);
+    console.log(`User connected: ${userName} (${socket.id})`);
 
-        }
+    // 1. Emit the updated online users list to everyone
+    io.emit("ONLINE_USERS", Array.from(userSocketIDs.keys()));
 
-        const msgForDB = {
-            content: message,
-            sender: user._id,
-            chat: chatId,
-        }
+    //  2. Listen for new messages from this socket
+    socket.on("NEW_MESSAGE_SENT", (data) => {
+        const { chatId, message, members } = data;
 
-        const membersSockets = getSockets(members)
-        io.to(membersSockets).emit(Events.NEW_MESSAGE,{ 
-            chatId,
-            message: msgForRealTime,
+        //
+        members.forEach((memberId) => {
+            // don't send the message to the sender
+            if (memberId === socket.user._id.toString()) return;
 
-        })
-        io.to(membersSockets).emit(Events.NEW_MESSAGE_ALERT,{
-            chatId
-        })
+            const recipientSocketId = userSocketIDs.get(memberId);
+            if (recipientSocketId) {
+                // send the message to the recipient
+                io.to(recipientSocketId).emit("MESSAGE_RECEIVED", {
+                    chatId,
+                    message: {
+                    _id: message._id,
+                    content: message.content,
+                    sender: message.sender, 
+                    createdAt: message.createdAt || new Date().toISOString(),
+                    chat: chatId
+                }
+                });
+            }
+        });
+    });
 
-        console.log("NEW Msg", msgForRealTime);
-
-        try {
-            await Message.create(msgForDB);
-        } catch (error) {
-            console.log(error);
-        }
-
-    })
-
-    // Jab user disconnect ho
     socket.on("disconnect", () => {
+
         console.log("User disconnected:", socket.id);
-        userSocketIDs.delete(user._id.toString());
+        // Update online list for everyone
+        if (userSocketIDs.get(userId) === socket.id) {
+            userSocketIDs.delete(userId);
+            io.emit("ONLINE_USERS", Array.from(userSocketIDs.keys()));
+        }
     });
 });
 // ------------------------------------------------

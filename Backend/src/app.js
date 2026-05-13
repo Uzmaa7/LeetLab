@@ -32,7 +32,7 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use(cors({
-    origin: "http://localhost:5173", // Aapka Vite frontend URL
+    origin: "http://localhost:5173", // Vite frontend URL
     credentials: true
 }));
 
@@ -60,8 +60,8 @@ app.use("/api/v1/contest-messages", contestMessageRouter);
 app.use("/api/v1/contest-participants", contestParticipantRouter);
 
 //==== TalkTown =========================================
-app.use("/api/v1/chat", chatRouter);
-app.use("/api/v1/friend", friendRouter);
+app.use("/api/v1/chats", chatRouter);
+app.use("/api/v1/friends", friendRouter);
 
 
 
