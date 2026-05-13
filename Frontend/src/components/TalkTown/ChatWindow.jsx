@@ -8,6 +8,8 @@ import AddMemberModal from './AddMemberModal';
 
 import { getMessagesService } from '../../services/chat.service';
 
+import { useSocket } from '../../contexts/SocketContext';
+
 const ChatWindow = ({ activeChat }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -17,14 +19,34 @@ const ChatWindow = ({ activeChat }) => {
 
     const [messages, setMessages] = useState([]); // Messages state
 
+    const { socket } = useSocket();
 
-    // 1. Fetch Messages Function
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewMessage = (data) => {
+            // if the new message belongs to the currently active chat, add it to the messages list
+            if (data.chatId === activeChat?._id) {
+                // add the new message to the list
+                setMessages((prev) => [...prev, data.message]);
+            }
+        };
+
+        socket.on("MESSAGE_RECEIVED", handleNewMessage);
+
+        return () => {
+            socket.off("MESSAGE_RECEIVED", handleNewMessage);
+        };
+    }, [socket, activeChat?._id]);
+
+
+    // 1. Fetch Messages
     const fetchMessages = useCallback(async () => {
         if (!activeChat?._id) return;
         
         setLoading(true);
         try {
-            // Page 1 fetch kar rahe hain abhi ke liye
+            // Page 1 fetch for now
             const data = await getMessagesService(activeChat._id, 1);
             if (data.success) {
                 setMessages(data.messages);
@@ -39,8 +61,9 @@ const ChatWindow = ({ activeChat }) => {
     // 2. Load messages when activeChat changes
     useEffect(() => {
         fetchMessages();
-        // Jab chat change ho to sidebar band kar dena better UX hai
+        // when we switch to a different chat, we should also close the sidebar and add member modal (if open)
         setIsSidebarOpen(false); 
+        setIsAddMemberOpen(false);
     }, [fetchMessages]);
 
 
@@ -60,30 +83,44 @@ const ChatWindow = ({ activeChat }) => {
                             Loading conversation...
                         </div>
                     ) : (
-                        <MessageList messages={messages} />
+                        <MessageList messages={messages} onMessageDeleted={fetchMessages} />
                     )}
                 </div>
 
-               {/* ChatInput ko fetchMessages pass kar rahe hain taki message bhejte hi list refresh ho */}
+               {/* ChatInput  */}
                 <ChatInput 
                     chatId={activeChat._id} 
                     onMessageSent={fetchMessages} 
+                    chatMembers={activeChat.members}
                 />
 
 
 
             </div>
 
-            {/* Group Info Sidebar */}
+            
+
+            {/* Group Info Sidebar - Mobile - full-screen/slide-over style */}
             {isSidebarOpen && (
-                <GroupInfoSidebar
-                    chatId={activeChat._id}
-                    onClose={() => setIsSidebarOpen(false)}
-                    onDeleteSuccess={() => { 
-                        setActiveChat(null);
-                        fetchChats();
-                    }}
-                />
+                <div className="fixed inset-0 lg:relative lg:inset-auto z-40 lg:z-10 flex">
+                    {/* Backdrop for Mobile */}
+                    <div 
+                        className="absolute inset-0 bg-black/60 lg:hidden" 
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                    
+                    {/* Actual Sidebar Content */}
+                    <div className="ml-auto w-[85%] sm:w-[320px] lg:w-80 h-full bg-zinc-950 border-l border-zinc-800 z-50">
+                        <GroupInfoSidebar
+                            chatId={activeChat._id}
+                            onClose={() => setIsSidebarOpen(false)}
+                            onDeleteSuccess={() => { 
+                                setActiveChat(null);
+                                fetchChats();
+                            }}
+                        />
+                    </div>
+                </div>
             )}
 
             {isAddMemberOpen && (
@@ -95,6 +132,8 @@ const ChatWindow = ({ activeChat }) => {
 
         </div>
     );
+
+    
 };
 
 export default ChatWindow;

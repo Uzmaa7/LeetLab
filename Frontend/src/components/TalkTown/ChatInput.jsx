@@ -5,10 +5,13 @@
 import React, { useState } from 'react'; 
 import { Paperclip, SendHorizontal, Smile, Loader2 } from 'lucide-react';
 import { api } from '../../services/api.services';
+import { useSocket } from '../../contexts/SocketContext';
 
-const ChatInput = ({ chatId, onMessageSent }) => {
+const ChatInput = ({ chatId, onMessageSent, chatMembers }) => {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const { socket } = useSocket();
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -18,15 +21,32 @@ const ChatInput = ({ chatId, onMessageSent }) => {
 
         setLoading(true);
         try {
-            // Backend endpoint jo humne abhi banaya: /chats/message
+            // Backend endpoint 
             const response = await api.post("/chats/message", {
                 chatId,
                 content: message.trim()
             });
 
+            // console.log("Send Message Response:", response);
+
             if (response.data.success) {
-                setMessage(""); // Input clear karein
-                if (onMessageSent) onMessageSent(); // ChatWindow ko trigger karein messages fetch karne ke liye
+
+                const messageData = response.data.data;
+
+                // console.log("Sending Message via Socket:", messageData);
+
+                if (socket) {
+                    socket.emit("NEW_MESSAGE_SENT", {
+                        chatId,
+                        message: messageData, 
+                        members: chatMembers 
+                    });
+                }
+
+               
+
+                setMessage(""); // Input clear
+                if (onMessageSent) onMessageSent();
             }
         } catch (err) {
             console.error("Failed to send message:", err);
@@ -37,7 +57,7 @@ const ChatInput = ({ chatId, onMessageSent }) => {
     };
 
     return (
-        <div className="p-4 bg-black border-t border-zinc-900">
+        <div className="p-2 md:p-4 bg-black border-t border-zinc-900">
             <form 
                 onSubmit={handleSend} 
                 className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800 rounded-2xl p-2 px-4 focus-within:border-zinc-700 transition"
@@ -54,7 +74,7 @@ const ChatInput = ({ chatId, onMessageSent }) => {
                 <input 
                     type="text" 
                     placeholder="Message..." 
-                    className="flex-1 bg-transparent border-none outline-none text-[14px] py-1 text-zinc-200"
+                    className="flex-1 bg-transparent border-none outline-none text-sm py-2 text-zinc-200"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                 />
@@ -62,9 +82,10 @@ const ChatInput = ({ chatId, onMessageSent }) => {
                 <div className="flex items-center gap-4">
                     {/* Emoji Button */}
                     <Smile 
-                        size={22} 
+                        size={20} 
+                        md:size={22}
                         strokeWidth={1.5} 
-                        className="text-zinc-500 cursor-pointer hover:text-yellow-500 transition" 
+                        className=" sm:block text-zinc-500 cursor-pointer hover:text-yellow-500 transition" 
                     />
                     
                     {/* Send Button */}
@@ -81,11 +102,6 @@ const ChatInput = ({ chatId, onMessageSent }) => {
                     </button>
                 </div>
             </form>
-            
-            {/* Branding */}
-            <p className="text-[9px] text-center text-zinc-700 mt-2 tracking-widest uppercase">
-                Secured by LeetLab
-            </p>
         </div>
     );
 };
