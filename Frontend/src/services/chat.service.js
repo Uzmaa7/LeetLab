@@ -1,4 +1,4 @@
-// src/services/chat.service.js
+
 import { api } from "./api.services";
 
 // Get all chats for the logged-in user
@@ -71,3 +71,11 @@ export const sendAttachmentService = async (formData) => {
     });
     return response.data;
 };
+
+
+export const deleteMessageService = async (messageId) => {
+    console.log("Sending delete request for message ID:", messageId);
+    const response = await api.delete(`/chats/message/${messageId}`);
+    console.log("Delete response from service:", response.data);
+    return response.data;
+}

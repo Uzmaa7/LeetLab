@@ -136,6 +136,11 @@ io.on("connection", async (socket) => {
         }
     });
 });
+
+
+// ... socket initialization ke baad
+app.set("io", io); // Isse hum controller mein io access kar payenge
+app.set("userSocketIDs", userSocketIDs); // Isse hum mapping access kar payenge
 // ------------------------------------------------
 
 

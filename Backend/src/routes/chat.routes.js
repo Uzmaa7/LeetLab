@@ -7,7 +7,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 
 import { createGroup, getMyChats, getMyGroups, addMembers, removeMember, exitGroup, 
-sendAttachment, getChatDetails, renameChat, deleteChat, getMessage, sendTextMessage } from "../controllers/chat.controller.js";
+sendAttachment, getChatDetails, renameChat, deleteChat, getMessage, sendTextMessage, deleteMessage } from "../controllers/chat.controller.js";
 
 import { createGroupChatValidation, addMembersValidation, removeMemberValidation, chatIdValidation, 
     sendAttachmentValidation, renameChatValidation, messageValidation
@@ -16,6 +16,8 @@ import { createGroupChatValidation, addMembersValidation, removeMemberValidation
 
 
 const chatRouter = express.Router();
+
+
 
 
 chatRouter.post("/create-group", verifyJWT, createGroupChatValidation(), validate, createGroup);
@@ -32,14 +34,16 @@ chatRouter.delete("/exit-group/:id", verifyJWT, chatIdValidation(), validate,  e
 
 chatRouter.post("/send-attachment", verifyJWT, sendAttachmentValidation, validate, upload.array("files", 5),  sendAttachment);
 
+
+
 chatRouter.post("/message", verifyJWT, messageValidation(), validate, sendTextMessage);
 
 chatRouter.get("/message/:id", verifyJWT, chatIdValidation(), validate, getMessage);
 
+chatRouter.delete("/message/:id",verifyJWT,  deleteMessage);
 
 
-
-//get chat -> details, rename, delete
+// get chat -> details, rename, delete
 chatRouter.route("/:id")
 .get(verifyJWT, chatIdValidation(), validate, getChatDetails)
 .put(verifyJWT, renameChatValidation(), validate, renameChat)

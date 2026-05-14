@@ -8,11 +8,42 @@ import { UserPlus, ArrowLeft } from 'lucide-react';
 import ChatWindow from './ChatWindow';
 import CreateGroupModal from './CreateGroupModal';
 
+import { useUserContext } from '../../contexts/UserContext';
+
 const DirectMessages = () => {
     const { chats, loading, activeChat, setActiveChat } = useChat();
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
+    const { user: currentUser } = useUserContext();
+
     if (loading) return <div className="text-white p-10">Loading Chats...</div>;
+
+
+    const getPreviewText = (chat) => {
+        const msg = chat.latestMessage;
+
+        if (!msg) return <span>{chat.groupChat ? "Group Chat" : "Private Message"}</span>;
+
+        if (msg.messageType === 'notification') {
+            return <span>{msg.content}</span>;
+        }
+
+        if (chat.groupChat) {
+            const isMe = msg.sender?._id === currentUser?._id;
+            const senderName = isMe ? "You" : msg.sender?.fullname?.split(" ")[0];
+
+            return (
+                <>
+                    {/* Sender name is shown in a lighter color */}
+                    <span className="text-zinc-300 font-medium">{senderName}: </span>
+                    {/* Message ccontent is blue */}
+                    <span>{msg.content}</span>
+                </>
+            );
+        }
+
+        return <span>{msg.content}</span>;
+    };
 
     return (
         <div className="flex w-full h-screen bg-black overflow-hidden border-l border-zinc-800 relative">
@@ -41,15 +72,36 @@ const DirectMessages = () => {
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all mb-1
                                 ${activeChat?._id === chat._id ? 'bg-zinc-900' : 'hover:bg-zinc-950 text-zinc-400 hover:text-white'}`}
                         >
-                            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold border border-zinc-700">
-                                {chat.name[0]}
+                           
+
+
+                            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold border border-zinc-700 overflow-hidden">
+                                {chat.groupChat ? (
+                                    // Group ke liye default ya initial
+                                    chat.name[0]
+                                ) : (
+                                    // 1-on-1 ke liye agar backend se avatar aa raha hai
+                                    chat.avatar ? <img src={chat.avatar} className="w-full h-full object-cover" /> : chat.name[0]
+                                )}
                             </div>
 
 
+
+                        
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm truncate text-white">{chat.name}</h3>
+                                <div className="flex justify-between items-baseline">
+                                    <h3 className="font-semibold text-sm truncate text-white">{chat.name}</h3>
+
+                                    {/* 🕒 TIME ADDED HERE: to show the time of the latest message */}
+                                    {chat.latestMessage?.createdAt && (
+                                        <span className="text-[10px] text-zinc-600">
+                                            {new Date(chat.latestMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                </div>
+
                                 <p className={`text-xs truncate mt-0.5 ${chat.unread ? 'text-blue-400 font-bold' : 'text-zinc-500'}`}>
-                                    {chat.latestMessage?.content || (chat.groupChat ? "Group Chat" : "Private Message")}
+                                    {getPreviewText(chat)}
                                 </p>
                             </div>
 
@@ -65,7 +117,7 @@ const DirectMessages = () => {
             <div className={`${activeChat ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full bg-black`}>
                 {activeChat ? (
                     <div className="flex-1 flex flex-col h-full relative">
-                        {/* Mobile specific back button (WhatsApp style) */}
+                        {/* Mobile specific back button  */}
                         <div className="md:hidden absolute top-4 left-4 z-50">
                             <button
                                 onClick={() => setActiveChat(null)}

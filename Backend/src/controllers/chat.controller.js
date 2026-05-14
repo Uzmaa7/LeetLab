@@ -24,6 +24,34 @@ const createGroup = async (req, res) => {
             members: allMembers,
         })
 
+        //Group Creation Notification
+        const creatorName = req.user.fullname;
+        const welcomeMessage = await Message.create({
+            chat: groupChat._id,
+            sender: req.user._id,
+            content: `${creatorName} created group "${name}"`,
+            messageType: 'notification'
+        });
+
+        // --- LATEST MESSAGE LOGIC ADDED HERE ---
+        groupChat.latestMessage = welcomeMessage._id;
+        await groupChat.save();
+        // ---------------------------------------
+
+        // SOCKET EMIT: to notify all members about the new group and the welcome message
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        allMembers.forEach((memberId) => {
+            const socketId = userSocketIDs.get(memberId.toString());
+            if (socketId) {
+                io.to(socketId).emit("MESSAGE_RECEIVED", {
+                    chatId: groupChat._id,
+                    message: welcomeMessage
+                });
+            }
+        });
+
         return res.status(201).json({
             success: true,
             message: "Group created successfully",
@@ -49,8 +77,17 @@ const getMyChats = async (req, res) => {
                 "members",
                 "fullname  avatar" //select only these two fields of members
             )
+            .populate({
+                path: "latestMessage",
+                populate: {
+                    path: "sender",
+                    select: "fullname avatar"
+                }
+            })
+            .sort({ updatedAt: -1 });
 
-        const transformedChats = allChats.map(({ _id, name, groupChat, members }) => {
+
+        const transformedChats = allChats.map(({ _id, name, groupChat, members, latestMessage }) => {
 
             // Agar ye group chat nahi hai, toh dusre user ka data nikaalein
             const getOtherMember = !groupChat ? findOtherMember(members, req.user._id) : null;
@@ -60,6 +97,8 @@ const getMyChats = async (req, res) => {
                 _id,
                 name: groupChat ? name : getOtherMember.fullname,
                 groupChat,
+                latestMessage,
+                avatar: groupChat ? null : getOtherMember?.avatar?.url,
                 //member me humne avatar and name bhi mnga liya tha , yha hum whi hta rahe hain 
                 // bs ids rakh rhe hain 
                 members: members.reduce((prev, curr) => {
@@ -168,20 +207,63 @@ const addMembers = async (req, res) => {
         const newMembers = await Promise.all(newMembersPromise);
 
         //5. Filter out those users who were not found in database
-        const people = newMembers
-            .filter((m) => m !== null)
-            .map((m) => m._id);
+        const validMembers = newMembers.filter((m) => m !== null);
+        const peopleIds = validMembers.map((m) => m._id);
 
-        chat.members.push(...people);//ids pushed
+        // const people = newMembers
+        //     .filter((m) => m !== null)
+        //     .map((m) => m._id);
+
+        chat.members.push(...peopleIds);//ids pushed
 
 
         await chat.save()
 
+        // System Messages (Notifications)
+        const adminName = req.user.fullname;
+        const systemMessagesPromise = validMembers.map((m) =>
+            Message.create({
+                chat: chatId,
+                sender: req.user._id,
+                content: `${m.fullname} was added by ${adminName}`,
+                messageType: 'notification'
+            })
+        );
+
+
+        const savedMessages = await Promise.all(systemMessagesPromise);
+
+        if (savedMessages.length > 0) {
+            chat.latestMessage = savedMessages[savedMessages.length - 1]._id;
+        }
+
+        await chat.save();
+
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        const allMembers = [...chat.members];
+
+        savedMessages.forEach((msg) => {
+            allMembers.forEach((memberId) => {
+                const socketId = userSocketIDs.get(memberId.toString());
+                if (socketId) {
+                    io.to(socketId).emit("MESSAGE_RECEIVED", {
+                        chatId,
+                        message: {
+                            ...msg._doc, // pure message object ko bhej rahe hain
+                            chat: chatId
+                        }
+                    });
+                }
+            });
+        });
+
         return res.status(200).json({
             success: true,
-            message: "members added succesfully",
-
-        })
+            message: "Members added successfully",
+            messages: savedMessages
+        });
 
         //emitevent-> 2:39
     } catch (error) {
@@ -232,12 +314,40 @@ const removeMember = async (req, res) => {
             })
         }
 
+        const removeMsg = await Message.create({
+            chat: chatId,
+            sender: req.user._id,
+            content: `${userRemove.fullname} was removed by ${req.user.fullname}`,
+            messageType: 'notification'
+        });
+
+        // --- LATEST MESSAGE UPDATE ---
+        chat.latestMessage = removeMsg._id;
+        // -----------------------------------
+
+        // ---  ---
+        const allMembersIncludingRemoved = [...chat.members];
+
         // 3. remove the member from the group
         // filter returns an array []
         chat.members = chat.members.filter((id) => id.toString() !== userRemoveId.toString());
 
-
         await chat.save()
+
+
+
+        // Socket Emit (Same logic as addMembers)
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        allMembersIncludingRemoved.forEach((memberId) => {
+            const socketId = userSocketIDs.get(memberId.toString());
+            if (socketId) io.to(socketId).emit("MESSAGE_RECEIVED", { chatId, message: removeMsg });
+        });
+
+        // Extra: the user who got removed should also get the notification (taaki uska UI update ho jaye aur wo group chat se hat jaye)
+        const removedUserSocketId = userSocketIDs.get(userRemoveId);
+        if (removedUserSocketId) io.to(removedUserSocketId).emit("MESSAGE_RECEIVED", { chatId, message: removeMsg });
 
         //emitEvent-249
         return res.status(200).json({
@@ -286,12 +396,28 @@ const exitGroup = async (req, res) => {
         });
     }
 
+    const exitMsg = await Message.create({
+        chat: chatId,
+        sender: req.user._id,
+        content: `${req.user.fullname} left the group`,
+        messageType: 'notification'
+    });
 
+    // --- LATEST MESSAGE UPDATE  ---
+    chat.latestMessage = exitMsg._id;
+    // -----------------------------------
+
+    const io = req.app.get("io");
+    const userSocketIDs = req.app.get("userSocketIDs");
+
+    // tell everyone that this user has left the group (including the user who left, taaki uska UI update ho jaye)
+    chat.members.forEach((memberId) => {
+        const socketId = userSocketIDs.get(memberId.toString());
+        if (socketId) io.to(socketId).emit("MESSAGE_RECEIVED", { chatId, message: exitMsg });
+    });
 
     //update chat.members
     chat.members = chat.members.filter((id) => id.toString() !== req.user._id.toString());
-
-    // chat save
     await chat.save();
 
     return res.status(200).json({
@@ -452,7 +578,24 @@ const renameChat = async (req, res) => {
         }
 
         chat.name = name;
+        chat.latestMessage = renameMsg._id;
         await chat.save();
+
+        // renameChat controller ke andar:
+        const renameMsg = await Message.create({
+            chat: chatId,
+            sender: req.user._id,
+            content: `${req.user.fullname} changed the group name to "${name}"`,
+            messageType: 'notification'
+        });
+
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        chat.members.forEach((memberId) => {
+            const socketId = userSocketIDs.get(memberId.toString());
+            if (socketId) io.to(socketId).emit("MESSAGE_RECEIVED", { chatId, message: renameMsg });
+        });
 
         //emit 323
 
@@ -498,8 +641,8 @@ const deleteChat = async (req, res) => {
         const members = chat.members;
 
         //only admin can delete the groupchat
-        if(chat.groupChat && chat.createdBy.toString() !== req.user._id.toString()){
-             return res.status(400).json({
+        if (chat.groupChat && chat.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(400).json({
                 message: "You are not allowed to delete this group"
             })
         }
@@ -507,12 +650,12 @@ const deleteChat = async (req, res) => {
         // admin , member, groupChat/Chat
         // we have to delete all messages as well as attachments from cloudinary
 
-        const allMessageOfThisChat = await Message.find({chat : chatId})
+        const allMessageOfThisChat = await Message.find({ chat: chatId })
 
         const public_ids = [];
 
-        allMessageOfThisChat.forEach(({attachments}) => {
-            attachments.forEach(({public_id}) => {
+        allMessageOfThisChat.forEach(({ attachments }) => {
+            attachments.forEach(({ public_id }) => {
                 public_ids.push(public_id)
             })
         })
@@ -521,19 +664,19 @@ const deleteChat = async (req, res) => {
         await Promise.all([
             deleteFromCloudinary(public_ids),
             chat.deleteOne(),
-            Message.deleteMany({chat : chatId}),
+            Message.deleteMany({ chat: chatId }),
 
         ])
 
         return res.status(200).json({
             success: true,
             message: "deleteChat successfully",
-            
+
         })
 
         //emit 333
 
-        
+
     } catch (error) {
         console.error("deleteChat Error:", error);
         return res.status(500).json({
@@ -549,41 +692,41 @@ const getMessage = async (req, res) => {
     const chatId = req.params.id;
 
     //localhost:3000/messages/chatId?page=2
-    const {page = 1} = req.query;
+    const { page = 1 } = req.query;
 
     const msg_limit_per_page = 20;
 
-    const skip = (page-1) * msg_limit_per_page;
+    const skip = (page - 1) * msg_limit_per_page;
 
     try {
         //2. get all the messages of this particular page , and totalMessageCount of this particular chat 
         const [messages, totalMessageCount] = await Promise.all([
             //message dhundh kr lao
-            Message.find({chat: chatId})
-            .sort({createdAt: -1})//get newer message first
-            .skip(skip)
-            .limit(msg_limit_per_page)
-            .populate("sender", "fullname")
-            .lean(),
-    
+            Message.find({ chat: chatId })
+                .sort({ createdAt: -1 })//get newer message first
+                .skip(skip)
+                .limit(msg_limit_per_page)
+                .populate("sender", "fullname avatar")
+                .lean(),
+
             // Total kitne messages hain?
-            Message.countDocuments({chat: chatId}),
+            Message.countDocuments({ chat: chatId }),
         ])
-    
+
         // 3. Total Pages calculate karna
-        const totalPages = Math.ceil(totalMessageCount/msg_limit_per_page);
-    
-     // 4. Response bhejna
-            return res.status(200).json({
-                success: true,
-                // Hum .reverse() isliye kar rahe hain taaki frontend par 
-                // messages sahi order (purane se naye) mein dikhein
-                messages: messages.reverse(), 
-                totalPages,
-            });  
-    
+        const totalPages = Math.ceil(totalMessageCount / msg_limit_per_page);
+
+        // 4. Response bhejna
+        return res.status(200).json({
+            success: true,
+            // Hum .reverse() isliye kar rahe hain taaki frontend par 
+            // messages sahi order (purane se naye) mein dikhein
+            messages: messages.reverse(),
+            totalPages,
+        });
+
     } catch (error) {
-         console.error("getMessage Error:", error);
+        console.error("getMessage Error:", error);
         return res.status(500).json({
             success: false,
             message: " pagination error in getMessage "
@@ -623,6 +766,9 @@ const sendTextMessage = async (req, res) => {
             attachments: [] // Simple text message hai toh empty array
         });
 
+        chat.latestMessage = message._id;
+        await chat.save();
+
         // 4. Populate sender details for immediate UI update
         const populatedMessage = await Message.findById(message._id)
             .populate("sender", "fullname avatar");
@@ -644,7 +790,60 @@ const sendTextMessage = async (req, res) => {
 
 
 
+
+
+
+const deleteMessage = async (req, res) => {
+    console.log("deleteMessage called with ID:", req.params.id);
+    const { id } = req.params;
+
+    console.log("User requesting delete:", req.user._id);
+
+    try {
+        console.log("Finding message with ID:", id);
+        const message = await Message.findById(id);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found"
+            });
+        }
+
+        // Authorization: only sender can delete the message
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: You can only delete your own messages"
+            });
+        }
+
+        // if message has attachments, delete them from cloudinary
+        if (message.attachments && message.attachments.length > 0) {
+            const public_ids = message.attachments.map(att => att.public_id).filter(id => id);
+            if (public_ids.length > 0) {
+                await deleteFromCloudinary(public_ids);
+            }
+        }
+
+        await message.deleteOne();
+
+        return res.status(200).json({
+            success: true,
+            message: "Message deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("deleteMessage Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error while deleting message"
+        });
+    }
+};
+
+
 export {
     createGroup, getMyChats, getMyGroups, addMembers, removeMember,
-    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat,getMessage, sendTextMessage
+    exitGroup, sendAttachment, getChatDetails, renameChat, deleteChat, getMessage, sendTextMessage, deleteMessage
 };
