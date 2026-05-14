@@ -1,26 +1,31 @@
 import mongoose from "mongoose";
 
 const chatSchema = new mongoose.Schema({
-    name : {
+    name: {
         type: String,
         required: true,
     },
 
-    groupChat :{
-        type : Boolean,
+    groupChat: {
+        type: Boolean,
         default: false,
     },
 
-    createdBy : {
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     },
 
-    members : [{
+    members: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     }],
-}, {timestamps: true});
+
+    latestMessage: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message"
+    },
+}, { timestamps: true });
 
 const Chat = mongoose.model("Chat", chatSchema);
 export default Chat;
