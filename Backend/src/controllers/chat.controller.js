@@ -749,7 +749,7 @@ const sendTextMessage = async (req, res) => {
             });
         }
 
-        // 2. Check if Chat exists (Optional but recommended)
+        // 2. Check if Chat exists 
         const chat = await Chat.findById(chatId);
         if (!chat) {
             return res.status(404).json({
@@ -757,6 +757,21 @@ const sendTextMessage = async (req, res) => {
                 message: "Chat not found"
             });
         }
+
+        // --- BUG FIX: MEMBERSHIP CHECK START ---
+        // Hum check karenge ki current user group ke 'members' array mein hai ya nahi
+        const isMember = chat.members.some(
+            (memberId) => memberId.toString() === req.user._id.toString()
+        );
+
+        if (!isMember) {
+            return res.status(403).json({
+                success: false,
+                message: "You are no longer a member of this group"
+            });
+        }
+
+        
 
         // 3. Create the message
         const message = await Message.create({
