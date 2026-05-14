@@ -35,6 +35,12 @@ const messageSchema = new mongoose.Schema({
         enum: ['sent', 'seen'],
         default: 'sent'
     },
+
+    messageType: {
+        type: String,
+        enum: ['text', 'notification', 'attachment', 'announcement'], 
+        default: 'text'
+    },
     
 }, { timestamps: true });
 
