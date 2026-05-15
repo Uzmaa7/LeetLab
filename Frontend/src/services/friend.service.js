@@ -26,7 +26,18 @@ export const sendRequestService = async (receiverId) => {
 
 // Get all friends (with optional chatId for filtering)
 export const getMyFriendsService = async (chatId = "") => {
-    // Agar chatId hai toh '?chatId=xyz' jud jayega, warna khali string
+    // if chatId exist then  '?chatId=xyz' jud jayega, warna khali string
     const response = await api.get(`/friends/my-friends${chatId ? `?chatId=${chatId}` : ""}`);
+    return response.data;
+};
+
+export const cancelRequestService = async (receiverId) => {
+   
+    const response = await api.delete("/friends/cancel-request", { data: { receiverId } });
+    return response.data;
+};
+
+export const rejectRequestService = async (requestId) => {
+    const response = await api.delete("/friends/reject-request", { data: { requestId } });
     return response.data;
 };
