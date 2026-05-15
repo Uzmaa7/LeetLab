@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Search as SearchIcon, UserPlus, Loader2 } from 'lucide-react';
-import { searchUsersService, sendRequestService } from '../../services/friend.service';
+import { X, Search as SearchIcon, UserPlus, Loader2,XCircle } from 'lucide-react';
+import { searchUsersService, sendRequestService ,cancelRequestService} from '../../services/friend.service';
 
 const SearchModal = ({ onClose }) => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -28,16 +28,41 @@ const SearchModal = ({ onClose }) => {
         }
     };
 
-    const handleSendRequest = async (id) => {
-        try {
-            const data = await sendRequestService(id);
-            if (data.success) {
-                alert("Request sent successfully!");
+    // const handleSendRequest = async (id) => {
+    //     try {
+    //         const data = await sendRequestService(id);
+    //         if (data.success) {
+    //             alert("Request sent successfully!");
                 
-                // setUsers(prev => prev.filter(user => user._id !== id));
+    //             // setUsers(prev => prev.filter(user => user._id !== id));
+    //         }
+    //     } catch (err) {
+    //         alert(err.response?.data?.message || "Failed to send request");
+    //     }
+    // };
+
+
+    // --- Unified Handler for Send and Cancel ---
+    const handleRequestAction = async (userId, isSent) => {
+        try {
+            if (isSent) {
+                // if request is already sent, then cancel it
+                const data = await cancelRequestService(userId);
+                if (data.success) {
+                    // update UI: requestSent false kardo
+                    setUsers(prev => prev.map(u => u._id === userId ? { ...u, requestSent: false } : u));
+                }
+            } else {
+                // if request is not sent, then send it
+                const data = await sendRequestService(userId);
+                if (data.success) {
+                    // update UI: requestSent true kardo
+                    setUsers(prev => prev.map(u => u._id === userId ? { ...u, requestSent: true } : u));
+                }
             }
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to send request");
+            console.error("Action failed:", err);
+            alert(err.response?.data?.message || "Something went wrong");
         }
     };
 
@@ -82,13 +107,29 @@ const SearchModal = ({ onClose }) => {
                                     />
                                     <span className="text-sm font-medium text-zinc-200">{user.fullname}</span>
                                 </div>
-                                <button 
+                                {/* <button 
                                     onClick={() => handleSendRequest(user._id)}
                                     className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                     title="Add Friend"
                                 >
                                     <UserPlus size={18} />
+                                </button> */}
+
+
+                                {/* Dynamic Button based on requestSent status */}
+                                <button 
+                                    onClick={() => handleRequestAction(user._id, user.requestSent)}
+                                    className={`p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex items-center gap-1
+                                        ${user.requestSent ? 'bg-zinc-800 text-red-500 hover:bg-zinc-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                    title={user.requestSent ? "Cancel Request" : "Add Friend"}
+                                >
+                                    {user.requestSent ? (
+                                        <X size={18} strokeWidth={2.5} /> // Cancel Icon (Cross)
+                                    ) : (
+                                        <UserPlus size={18} /> // Add Icon
+                                    )}
                                 </button>
+                                
                             </div>
                         ))
                     ) : searchQuery && (

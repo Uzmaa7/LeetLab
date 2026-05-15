@@ -3,6 +3,7 @@
 //send friend request 
 //accept friend request 
 //reject request 
+//cancel request
 //show notifications
 //friends
 
@@ -40,12 +41,33 @@ const searchUsersInTalkTown = async (req, res) => {
             fullname: { $regex: fullname, $options: "i" },
         })
 
+
+        // --- BUG FIX STARTS HERE ---
+        // 1. find all friend requests sent by the current user
+        const mySentRequests = await Request.find({ 
+            sender: req.user._id 
+        });
+
+        // 2.make an array of receiver ids from the sent requests
+        const sentRequestIds = mySentRequests.map(r => r.receiver.toString());
+
         // 6. Format the user data
-        const users = allUsers.map(({ _id, fullname, avatar }) => ({
-            _id,
-            fullname,
-            avatar: avatar.url,
-        }))
+        // const users = allUsers.map(({ _id, fullname, avatar }) => ({
+        //     _id,
+        //     fullname,
+        //     avatar: avatar.url,
+           
+        // }))
+        const users = allUsers.map((u) => ({
+            _id: u._id,
+            fullname: u.fullname,
+            avatar: u.avatar.url,
+            // if the user's id is in the sentRequestIds array, then requestSent will be true, otherwise false
+            requestSent: sentRequestIds.includes(u._id.toString())
+        }));
+
+
+        // console.log("searchUsersInTalkTown users:", users);
 
         return res.status(200).json({
             success: true,
@@ -86,6 +108,23 @@ const sendRequest = async (req, res) => {
         })
 
         //emit 443
+        // --- REAL TIME SOCKET LOGIC ---
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        const receiverSocketId = userSocketIDs.get(receiverId.toString());
+
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("NEW_FRIEND_REQUEST", {
+                requestId: request._id,
+                sender: {
+                    _id: req.user._id,
+                    fullname: req.user.fullname,
+                    avatar: req.user.avatar?.url || ""
+                }
+            });
+        }
+        // ------------------------------
 
         return res.status(200).json({
             success: true,
@@ -129,14 +168,16 @@ const acceptRequest = async (req, res) => {
         if (!accept) {
             await request.deleteOne();
             return res.status(200).json({
-                success: true,
+                success: false,
                 message: "request rejected",
             });
         }
 
+
+
         const members = [request.sender._id, request.receiver._id];
 
-        await Promise.all([
+        const [newChat] = await Promise.all([
             Chat.create({
                 name: `${request.sender.fullname}-${request.receiver.fullname}`,
                 members
@@ -146,6 +187,20 @@ const acceptRequest = async (req, res) => {
         ])
 
         //emit 453
+        // emit event to the sender that request is accepted
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+
+        const senderSocketId = userSocketIDs.get(request.sender._id.toString());
+
+        if (senderSocketId) {
+            io.to(senderSocketId).emit("FRIEND_REQUEST_ACCEPTED", {
+                chatId: newChat._id,
+                receiverName: request.receiver.fullname
+            });
+        }
+
+
         return res.status(200).json({
             success: true,
             message: "accept request successfully",
@@ -161,6 +216,59 @@ const acceptRequest = async (req, res) => {
         });
     }
 }
+
+// Request reject 
+const rejectRequest = async (req, res) => {
+    try {
+        const { requestId } = req.body;
+
+        const request = await Request.findById(requestId).populate("receiver", "fullname");
+        if (!request) return res.status(404).json({ success: false, message: "Request not found" });
+
+        const senderId = request.sender.toString();
+        await request.deleteOne();
+
+        // Socket: notify the sender that their request has been rejected, so they can update their UI accordingly
+        const io = req.app.get("io");
+        const userSocketIDs = req.app.get("userSocketIDs");
+        const senderSocketId = userSocketIDs.get(senderId);
+
+        if (senderSocketId) {
+            io.to(senderSocketId).emit("FRIEND_REQUEST_REJECTED", { receiverName: request.receiver.fullname });
+        }
+
+        return res.status(200).json({ success: true, message: "Request rejected" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// Request cancel (for search modal)
+const cancelRequest = async (req, res) => {
+    try {
+        const { receiverId } = req.body;
+
+        const request = await Request.findOneAndDelete({ 
+            sender: req.user._id, 
+            receiver: receiverId 
+        });
+
+        if (request) {
+            // Socket: notify the receiver that the request has been cancelled, so they can update their UI accordingly
+            const io = req.app.get("io");
+            const userSocketIDs = req.app.get("userSocketIDs");
+            const receiverSocketId = userSocketIDs.get(receiverId);
+
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit("FRIEND_REQUEST_CANCELLED", { requestId: request._id });
+            }
+        }
+
+        return res.status(200).json({ success: true, message: "Request cancelled" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
 
 const notification = async (req, res) => {
 
@@ -212,7 +320,7 @@ const myfriends = async (req, res) => {
             members: req.user._id,
             groupChat: false,
         })
-        .populate("members", "fullname avatar")
+            .populate("members", "fullname avatar")
 
         const friends = chats.map(({ members }) => {
             const otherMember = findOtherMember(members, req.user._id);
@@ -251,4 +359,4 @@ const myfriends = async (req, res) => {
     }
 }
 
-export { searchUsersInTalkTown, sendRequest, acceptRequest, notification, myfriends };
+export { searchUsersInTalkTown, sendRequest, acceptRequest, notification, myfriends, rejectRequest, cancelRequest };

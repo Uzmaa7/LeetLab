@@ -1,5 +1,6 @@
 
 import { Home, MessageSquare, UserPlus, PlusSquare, Search, LogOut } from 'lucide-react';
+import { useSocket } from "../../contexts/SocketContext";
 
 const Sidebar = ({ setView, activeView, openCreatePost, openSearch }) => {
 
@@ -9,6 +10,19 @@ const Sidebar = ({ setView, activeView, openCreatePost, openSearch }) => {
         { id: 'messages', label: 'Messages', icon: MessageSquare },
         { id: 'requests', label: 'Requests', icon: UserPlus },
     ];
+
+    const { requestCount, setRequestCount } = useSocket();
+
+    const handleNavigation = (id) => {
+        if (id === 'search') {
+            openSearch();
+        } else {
+            if (id === 'requests') {
+                setRequestCount(0); //reset the request count when user clicks on requests tab
+            }
+            setView(id);
+        }
+    };
 
 
     return (
@@ -25,18 +39,27 @@ const Sidebar = ({ setView, activeView, openCreatePost, openSearch }) => {
                 {navItems.map((item) => (
                     <button
                         key={item.id}
-                        onClick={() => {
+                        // onClick={() => {
 
-                            if (item.id === 'search') {
-                                openSearch();
-                            } else {
-                                setView(item.id);
-                            }
-                        }}
-                        className={`flex items-center justify-center p-3 rounded-xl transition-all group
+                        //     if (item.id === 'search') {
+                        //         openSearch();
+                        //     } else {
+                        //         setView(item.id);
+                        //     }
+                        // }}
+
+                        onClick={() => handleNavigation(item.id)}
+                        className={`relative flex items-center justify-center p-3 rounded-xl transition-all group
                            ${activeView === item.id && item.id !== 'search' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200'}`}
                     >
                         <item.icon size={24} strokeWidth={activeView === item.id ? 2.5 : 1.8} />
+
+                            {/* Notification Badge */}
+                        {item.id === 'requests' && requestCount > 0 && (
+                            <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-black">
+                                {requestCount}
+                            </span>
+                        )}
 
                     </button>
                 ))}
