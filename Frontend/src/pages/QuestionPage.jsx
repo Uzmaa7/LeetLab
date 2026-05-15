@@ -21,6 +21,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 
 import QuestionTable from "../components/Questions/QuestionTable.jsx"
 import QuestionModal from "../components/Questions/QuestionModal.jsx"
+import CollectionModal from '../components/Questions/CollectionModal.jsx';
 
 
 
@@ -474,7 +475,7 @@ const QuestionPage = () => {
 
 
             {/* SAVE TO COLLECTION MODAL */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
                 {isCollectionModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-6 rounded-2xl shadow-2xl">
@@ -521,7 +522,21 @@ const QuestionPage = () => {
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence> */}
+
+
+            <CollectionModal 
+                isOpen={isCollectionModalOpen}
+                onClose={() => setIsCollectionModalOpen(false)}
+                selectedIds={selectedIds}
+                userCollections={userCollections}
+                selectedCollectionId={selectedCollectionId}
+                setSelectedCollectionId={setSelectedCollectionId}
+                handleAddToCollection={handleAddToCollection}
+            />
+
+
+
 
 
 
