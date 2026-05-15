@@ -5,8 +5,9 @@ import {
     X, Link as LinkIcon, Tag, ChevronDown, Microscope, Layers, Flame, ChevronUp,
     CheckCircle2, Edit3, Trash2, Square, CheckSquare, FolderPlus, Laptop, Sparkles, CloudMoon
 } from 'lucide-react';
+
 import { deleteQuestionService, getAllQuestionsService, updateQuestionService, uploadQuestionService } from "../services/question.services.js";
-import {bulkAddQuestionsService, getAllCollectionsService, addQuestionToCollectionService} from "../services/collection.service.js"
+import { bulkAddQuestionsService, getAllCollectionsService, addQuestionToCollectionService } from "../services/collection.service.js"
 
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -18,6 +19,8 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 
 
 
+import QuestionTable from "../components/Questions/QuestionTable.jsx"
+import QuestionModal from "../components/Questions/QuestionModal.jsx"
 
 
 
@@ -36,20 +39,34 @@ const QuestionPage = () => {
     const [userCollections, setUserCollections] = useState([]);
     const [selectedCollectionId, setSelectedCollectionId] = useState("");
 
+    //contest
+    const [isContestModalOpen, setIsContestModalOpen] = useState(false);
+    const [contestFormData, setContestFormData] = useState({
+        title: "",
+        durationInMin: 60,
+        visibility: "public"
+    });
+
 
     // 1. Loading state add karein form submission ke liye
-const [submitting, setSubmitting] = useState(false);
-    
+    const [submitting, setSubmitting] = useState(false);
 
-// 1. Fetch user collections for the modal
+
+   
+    // 1. Fetch user collections for the modal
     useEffect(() => {
         if (isCollectionModalOpen) {
             const fetchUserCollections = async () => {
                 try {
-                    // Backend expects an object {page, limit}
-                    const res = await getAllCollectionsService({ page: 1, limit: 50 });
-                    setUserCollections(res?.data?.allCollections || []);
+                   
+                    const res = await getAllCollectionsService(1, 50);
+
+                    // console.log("Collections Debug:", res); 
+
+                    setUserCollections(res?.Collections || []);
+
                 } catch (err) {
+                    console.error("Fetch collections error:", err);
                     toast.error("Failed to load your collections");
                 }
             };
@@ -221,8 +238,8 @@ const [submitting, setSubmitting] = useState(false);
         }
 
         finally {
-        setSubmitting(false); // Enable button back
-    }
+            setSubmitting(false); // Enable button back
+        }
     };
 
     const handleDelete = async (id) => {
@@ -249,7 +266,29 @@ const [submitting, setSubmitting] = useState(false);
         setIsModalOpen(true);
     };
 
+    const handleCreateContestFromSelection = async (e) => {
+        e.preventDefault();
+        try {
+            const loadingToast = toast.loading("Creating contest...");
 
+            const payload = {
+                title: contestFormData.title,
+                durationInMin: contestFormData.durationInMin,
+                visibility: contestFormData.visibility,
+                directQuestionIds: selectedIds // Wahi selected IDs jo checkbox se mile
+            };
+
+            const res = await createContestService(payload);
+            toast.dismiss(loadingToast);
+            toast.success("Contest created! Code: " + res.data.contestCode);
+
+            setIsContestModalOpen(false);
+            setSelectedIds([]); // Selection clear karein
+        } catch (err) {
+            toast.dismiss();
+            toast.error(err?.message || "Failed to create contest");
+        }
+    };
 
     return (
         <DashboardLayout
@@ -291,7 +330,7 @@ const [submitting, setSubmitting] = useState(false);
             </AnimatePresence>
 
             {/* 2. Main Table Content */}
-            <div className="bg-[#18181B] border border-zinc-700 rounded-2xl overflow-hidden shadow-sm">
+            {/* <div className="bg-[#18181B] border border-zinc-700 rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-black/20 border-b border-zinc-700">
                         <tr>
@@ -336,7 +375,16 @@ const [submitting, setSubmitting] = useState(false);
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </div> */}
+
+
+            <QuestionTable
+                filteredQuestions={filteredQuestions}
+                selectedIds={selectedIds}
+                handleCheckboxChange={handleCheckboxChange}
+                openEditModal={openEditModal}
+                handleDelete={handleDelete}
+            />
 
             {/* 3. Pagination */}
             {pagination.totalPages > 1 && (
@@ -360,23 +408,41 @@ const [submitting, setSubmitting] = useState(false);
                     <motion.div initial={{ y: 100, x: "-50%" }} animate={{ y: -40, x: "-50%" }} exit={{ y: 100, x: "-50%" }} className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-zinc-950 border border-zinc-800 backdrop-blur-xl px-6 py-3 rounded-2xl">
                         <span className="text-zinc-100 font-bold text-sm">{selectedIds.length} Selected</span>
                         <button onClick={() => setIsCollectionModalOpen(true)} className="text-zinc-400 hover:text-blue-500"><FolderPlus size={20} /></button>
-                        <button onClick={() => setSelectedIds([])} className="text-zinc-400 hover:text-rose-500"><Trash2 size={20} /></button>
+                        <button onClick={() => setIsContestModalOpen(true)} className="text-zinc-400 hover:text-orange-500 transition-colors">
+                            <Swords size={20} />
+                        </button>
+                        {/* <button onClick={() => setSelectedIds([])} className="text-zinc-400 hover:text-rose-500"><Trash2 size={20} /></button> */}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* 5. Modals (Add Question & Collection) */}
-            <AnimatePresence>
+            {/* 5. Modals (Add Question & update Question) */}
+            <QuestionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                editingId={editingId}
+                formData={formData}
+                setFormData={setFormData}
+                handleUploadOrUpdate={handleUploadOrUpdate}
+                submitting={submitting}
+            />
+
+            {/* <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-6 rounded-2xl shadow-2xl">
+
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">{editingId ? 'Update' : 'New'} Question</h3>
                                 <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={16} /></button>
                             </div>
+
                             <form onSubmit={handleUploadOrUpdate} className="space-y-4">
-                                <input required className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-orange-500/40" value={formData.title} placeholder="Title (e.g. Two Sum)" onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* 1. Title Input */}
+            {/* <input required className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-orange-500/40" value={formData.title} placeholder="Title (e.g. Two Sum)" onChange={(e) => setFormData({ ...formData, title: e.target.value })} /> */}
+
+            {/* 2. Platform and Difficulty Selectors */}
+            {/* <div className="grid grid-cols-2 gap-4">
                                     <select className="bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none" value={formData.platform} onChange={(e) => setFormData({ ...formData, platform: e.target.value })}>
                                         <option value="leetcode">LeetCode</option>
                                         <option value="gfg">GFG</option>
@@ -387,17 +453,27 @@ const [submitting, setSubmitting] = useState(false);
                                         <option value="medium">Medium</option>
                                         <option value="hard">Hard</option>
                                     </select>
-                                </div>
-                                {!editingId && <input required type="url" className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.questionUrl} placeholder="Question URL" onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })} />}
-                                <input className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.topics} placeholder="Topics (comma separated)" onChange={(e) => setFormData({ ...formData, topics: e.target.value })} />
-                                <LeetButton type="submit" disabled={submitting} text={submitting ? "Processing..." : (editingId ? 'Save Changes' : 'Add Question')} icon={editingId ? CheckCircle2 : Plus} className="w-full justify-center" />
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                                </div> */}
 
-           {/* SAVE TO COLLECTION MODAL (PURE THEME) */}
+            {/* 3. URL Input: for Add question only */}
+            {/* {!editingId && <input required type="url" className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.questionUrl} placeholder="Question URL" onChange={(e) => setFormData({ ...formData, questionUrl: e.target.value })} />} */}
+
+            {/* 4. Topics Input: for Add question only */}
+            {/* {!editingId && <input className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none" value={formData.topics} placeholder="Topics (comma separated)" onChange={(e) => setFormData({ ...formData, topics: e.target.value })} /> } */}
+
+            {/* 5. Submit Button */}
+            {/* <LeetButton type="submit" disabled={submitting} text={submitting ? "Processing..." : (editingId ? 'Save Changes' : 'Add Question')} icon={editingId ? CheckCircle2 : Plus} className="w-full justify-center" /> */}
+            {/* </form> */}
+            {/* </motion.div> */}
+            {/* </div> */}
+            {/* )} */}
+            {/* </AnimatePresence>  */}
+
+
+
+
+
+            {/* SAVE TO COLLECTION MODAL */}
             <AnimatePresence>
                 {isCollectionModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -416,18 +492,81 @@ const [submitting, setSubmitting] = useState(false);
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Target Collection</label>
-                                    <select className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none focus:border-orange-500/40 font-bold transition-all cursor-pointer" value={selectedCollectionId} onChange={(e) => setSelectedCollectionId(e.target.value)}>
+                                   
+
+                                    <select
+                                       className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none focus:border-orange-500/40 font-bold transition-all cursor-pointer"
+                                        value={selectedCollectionId}
+                                        onChange={(e) => setSelectedCollectionId(e.target.value)}
+                                    >
                                         <option value="">Select a collection...</option>
-                                        {userCollections.map(col => (
-                                            <option key={col._id} value={col._id} className="bg-[#18181B]">{col.name.toUpperCase()} ({col.questionsCount})</option>
-                                        ))}
+                                        {userCollections && userCollections.length > 0 ? (
+                                            userCollections.map(col => (
+                                                <option key={col._id} value={col._id} className="bg-[#18181B]">
+                                                    {col.name.toUpperCase()} ({col.questionsCount || 0})
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>No collections found</option>
+                                        )}
                                     </select>
+
+
                                 </div>
                                 <div className="p-3 bg-black/30 border border-zinc-800/50 rounded-xl">
                                     <p className="text-[10px] leading-relaxed text-zinc-500 italic">Grouping questions helps you practice specific patterns more effectively.</p>
                                 </div>
                                 <LeetButton onClick={handleAddToCollection} text="Confirm Add" icon={CheckCircle2} className="w-full justify-center py-3" />
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+
+
+            {/* CREATE CONTEST MODAL */}
+            <AnimatePresence>
+                {isContestModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-md bg-[#18181B] border border-zinc-700 p-6 rounded-2xl shadow-2xl">
+                            <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-2">
+                                <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <Swords size={14} className="text-orange-500" /> Quick Contest
+                                </h3>
+                                <button onClick={() => setIsContestModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={16} /></button>
+                            </div>
+
+                            <form onSubmit={handleCreateContestFromSelection} className="space-y-4">
+                                <div className="px-1 mb-2">
+                                    <p className="text-[11px] text-zinc-400 font-bold italic">Hosting <span className="text-orange-500">{selectedIds.length}</span> selected problems</p>
+                                </div>
+
+                                <input required className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-orange-500/40"
+                                    placeholder="Contest Title"
+                                    value={contestFormData.title}
+                                    onChange={(e) => setContestFormData({ ...contestFormData, title: e.target.value })} />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Duration (Min)</label>
+                                        <input type="number" className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none"
+                                            value={contestFormData.durationInMin}
+                                            onChange={(e) => setContestFormData({ ...contestFormData, durationInMin: e.target.value })} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] uppercase font-bold text-zinc-600 ml-1">Visibility</label>
+                                        <select className="w-full bg-black/50 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 outline-none"
+                                            value={contestFormData.visibility}
+                                            onChange={(e) => setContestFormData({ ...contestFormData, visibility: e.target.value })}>
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <LeetButton type="submit" text="Generate Contest" icon={Swords} className="w-full justify-center py-3 mt-2" />
+                            </form>
                         </motion.div>
                     </div>
                 )}
