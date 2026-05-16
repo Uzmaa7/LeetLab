@@ -4,13 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { LeetButton } from '../components';
-import { 
-    getAllCollectionsService, 
-    createCollectionService, 
-    deleteCollectionService, 
-    updateCollectionService 
+import {
+    getAllCollectionsService,
+    createCollectionService,
+    deleteCollectionService,
+    updateCollectionService
 } from "../services/collection.service.js"
 import { useNavigate } from 'react-router-dom';
+
+import CollectionModal from '../components/Collections/CollectionModal.jsx';
+import CollectionCard from '../components/Collections/CollectionCard.jsx';
 
 const CollectionPage = () => {
     const [collections, setCollections] = useState([]);
@@ -18,7 +21,7 @@ const CollectionPage = () => {
     const [activeTab, setActiveTab] = useState("Collections");
 
     const navigate = useNavigate();
-    
+
     // UI States
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,8 +32,9 @@ const CollectionPage = () => {
     const fetchCollections = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await getAllCollectionsService(1, 20); // Backend page/limit logic
-            setCollections(response?.data?.allCollections || []);
+            const response = await getAllCollectionsService(1, 20);
+            // console.log("Full API Response:", response);
+            setCollections(response?.Collections || []);
         } catch (err) {
             toast.error(err?.message || "Failed to load collections");
         } finally {
@@ -38,14 +42,14 @@ const CollectionPage = () => {
         }
     }, []);
 
-    
+
 
     useEffect(() => {
         fetchCollections();
     }, [fetchCollections]);
 
     // Search Filtering (Local for UI)
-    const filteredCollections = collections.filter(c => 
+    const filteredCollections = collections.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -61,7 +65,8 @@ const CollectionPage = () => {
                 toast.success("New collection created!");
             }
             setIsModalOpen(false);
-            setFormData({ name: "", description: "", isPrivate: false });
+            setEditingId(null);
+            setFormData({ name: "", description: "", isPrivate: false })
             fetchCollections();
         } catch (err) {
             toast.error(err?.message || "Something went wrong");
@@ -80,6 +85,17 @@ const CollectionPage = () => {
         }
     };
 
+
+    const openEditModal = (col) => {
+        setEditingId(col._id);
+        setFormData({
+            name: col.name,
+            description: col.description || "",
+            isPrivate: col.isPrivate || false
+        });
+        setIsModalOpen(true);
+    };
+
     return (
         <DashboardLayout
             activeTab="Collections"
@@ -87,17 +103,23 @@ const CollectionPage = () => {
             title="Collections"
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            // DashboardLayout ab filterBar render nahi karega kyunki hum bhej hi nahi rahe (Requirement met!)
+
             actionButton={
-                <LeetButton 
-                    onClick={() => { setEditingId(null); setIsModalOpen(true); }} 
-                    text="Create Collection" 
-                    icon={FolderPlus} 
+                <LeetButton
+                    onClick={() => {
+                        setEditingId(null); o
+                        setFormData({ name: "", description: "", isPrivate: false }); 
+                        setIsModalOpen(true);
+                    }}
+                    text="Create Collection"
+                    icon={FolderPlus}
+
+
                 />
             }
         >
             {/* Collection Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 pb-24">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 pb-24">
                 {filteredCollections.map((col) => (
                     <motion.div
                         key={col._id}
@@ -105,7 +127,7 @@ const CollectionPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="group bg-[#18181B] border border-zinc-800 p-6 rounded-3xl hover:border-orange-500/40 transition-all shadow-xl relative overflow-hidden"
                     >
-                        {/* Background subtle glow on hover */}
+                      
                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <div className="flex justify-between items-start relative z-10">
@@ -132,19 +154,31 @@ const CollectionPage = () => {
                                 </span>
                                 {col.isPrivate ? <Lock size={14} className="text-zinc-600" /> : <Globe size={14} className="text-emerald-500/40" />}
                             </div>
-                            <button 
-    onClick={() => navigate(`/user/collections/${col._id}`)}
-    className="flex items-center gap-1 text-[10px] font-black text-orange-500..."
->
-    View Full <ChevronRight size={12} />
-</button>
+                            <button
+                                onClick={() => navigate(`/user/collections/${col._id}`)}
+                                className="flex items-center gap-1 text-[10px] font-black text-orange-500..."
+                            >
+                                View Full <ChevronRight size={12} />
+                            </button>
                         </div>
                     </motion.div>
+                ))}
+            </div> */}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 pb-24">
+                {filteredCollections.map((col) => (
+                    <CollectionCard
+                        key={col._id}
+                        col={col}
+                        onEdit={openEditModal}
+                        onDelete={handleDelete}
+                        onView={(id) => navigate(`/user/collections/${id}`)}
+                    />
                 ))}
             </div>
 
             {/* Modal for Create/Update */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-md bg-[#0A0A0A] border border-zinc-800 p-8 rounded-[2rem] shadow-2xl">
@@ -165,7 +199,7 @@ const CollectionPage = () => {
                                     <label className="text-[10px] uppercase font-bold text-zinc-600 ml-1">Description (Optional)</label>
                                     <textarea maxLength={100} rows="3" className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl text-xs text-white resize-none focus:border-orange-500/50 outline-none transition-all" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Target: Interview prep for FAANG..." />
                                 </div>
-                                
+
                                 <label className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800 rounded-2xl cursor-pointer hover:bg-zinc-900/50 transition-all">
                                     <input type="checkbox" className="w-4 h-4 accent-orange-600 rounded-md" checked={formData.isPrivate} onChange={(e) => setFormData({ ...formData, isPrivate: e.target.checked })} />
                                     <div className="flex flex-col">
@@ -181,7 +215,23 @@ const CollectionPage = () => {
                         </motion.div>
                     </div>
                 )}
+            </AnimatePresence> */}
+
+            <AnimatePresence>
+                {isModalOpen && (
+                    <CollectionModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        editingId={editingId}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleSubmit={handleSubmit}
+                    />
+                )}
             </AnimatePresence>
+
+
+
         </DashboardLayout>
     );
 };
