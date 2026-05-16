@@ -107,7 +107,7 @@ const CollectionPage = () => {
             actionButton={
                 <LeetButton
                     onClick={() => {
-                        setEditingId(null); o
+                        setEditingId(null); 
                         setFormData({ name: "", description: "", isPrivate: false }); 
                         setIsModalOpen(true);
                     }}

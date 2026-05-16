@@ -5,6 +5,7 @@ import { FolderPlus, Edit3, Trash2, Lock, Globe, ChevronRight } from 'lucide-rea
 const CollectionCard = ({ col, onEdit, onDelete, onView }) => {
     return (
         <motion.div
+            onClick={() => onView(col._id)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="group bg-[#18181B] border border-zinc-800 p-6 rounded-3xl hover:border-orange-500/40 transition-all shadow-xl relative overflow-hidden"
