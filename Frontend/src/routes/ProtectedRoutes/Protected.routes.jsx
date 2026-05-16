@@ -4,6 +4,7 @@ import GuestOnlyWrapper from "../GuestOnlyWrapper.jsx";
 import TalkTown from "../../pages/TalkTown.jsx";
 import TalkTownGateway from "../../components/TalkTownGateway.jsx";
 import CreatedContestsPage from "../../components/ContestPage/CreatedContestsPage.jsx";
+import JoinedContestsPage from "../../components/ContestPage/JoinedContestsPage.jsx"
 
 
 
@@ -54,5 +55,7 @@ export const ProtectedRoutes = (
 
 
         <Route path="/contests/created" element={<CreatedContestsPage />} />
+
+        <Route path="/contests/joined" element={<JoinedContestsPage />} />
     </>
 )
