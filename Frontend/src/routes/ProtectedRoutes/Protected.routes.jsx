@@ -5,7 +5,7 @@ import TalkTown from "../../pages/TalkTown.jsx";
 import TalkTownGateway from "../../components/TalkTownGateway.jsx";
 import CreatedContestsPage from "../../components/ContestPage/CreatedContestsPage.jsx";
 import JoinedContestsPage from "../../components/ContestPage/JoinedContestsPage.jsx"
-
+import AllHistoryPage from "../../components/ContestPage/AllHistoryPage.jsx";
 
 
 export const ProtectedRoutes = (
@@ -57,5 +57,7 @@ export const ProtectedRoutes = (
         <Route path="/contests/created" element={<CreatedContestsPage />} />
 
         <Route path="/contests/joined" element={<JoinedContestsPage />} />
+
+        <Route path="/contests/all" element={<AllHistoryPage />} />
     </>
 )
