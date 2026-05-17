@@ -1,4 +1,4 @@
-// src/pages/TalkTown.jsx
+
 import React, { useState } from 'react';
 import Sidebar from '../components/TalkTown/Sidebar';
 import Feed from '../components/TalkTown/Feed';
@@ -14,17 +14,19 @@ const TalkTown = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-black text-white">
+       <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
             {/* Sidebar with Navigation Icons */}
-            <Sidebar 
-                setView={setView} 
-                activeView={view} 
-                openCreatePost={() => setPostModalOpen(true)} 
-                openSearch={() => setIsSearchOpen(true)}
-            />
+            <div className="order-2 md:order-1">
+                <Sidebar 
+                    setView={setView} 
+                    activeView={view} 
+                    openCreatePost={() => setPostModalOpen(true)} 
+                    openSearch={() => setIsSearchOpen(true)}
+                />
+            </div>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex justify-center overflow-y-auto">
+            <main className="flex-1 flex justify-center overflow-y-auto order-1 md:order-2 pb-16 md:pb-0">
                 {view === 'feed' && <Feed />}
                 {view === 'messages' && <DirectMessages />}
                 {view === 'requests' && <Requests />}
@@ -35,6 +37,10 @@ const TalkTown = () => {
             {isPostModalOpen && <CreatePostModal onClose={() => setPostModalOpen(false)} />}
         </div>
     );
+
+
+
+    
 };
 
 export default TalkTown;

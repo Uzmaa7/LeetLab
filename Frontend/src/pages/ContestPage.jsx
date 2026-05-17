@@ -427,10 +427,10 @@ function ContestsPage() {
                         <Trophy size={12} className="text-indigo-500" /> Contest Arena
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-                        Compete. Practice. <span className="text-zinc-500">Improve.</span>
+                        Compete. Practice. <span className=" font-bold tracking-tighter bg-gradient-to-r from-white via-white/80 to-orange-600 bg-clip-text text-transparent">Improve.</span>
                     </h1>
                     <p className="text-zinc-500 max-w-xl mx-auto text-base">
-                        Professional environment for technical assessments and competitive programming.
+                        Join ongoing battles or create your own custom contests to challenge friends and climb the leaderboard.
                     </p>
                 </section>
 
