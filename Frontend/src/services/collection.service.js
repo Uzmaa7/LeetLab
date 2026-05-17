@@ -15,7 +15,7 @@ export const createCollectionService = async (data) => {
 // Get all collections (with pagination)
 export const getAllCollectionsService = async (page = 1, limit = 10) => {
     const response = await api.get(`/collections?page=${page}&limit=${limit}`);
-    return response.data;
+    return response.data.data;
 };
 
 // Get a particular collection detail by ID
