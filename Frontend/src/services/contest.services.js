@@ -42,7 +42,7 @@ export const getCreatedContestsService = async (params = {}) => {
 export const getJoinedContestsService = async (params = {}) => {
     try {
         const response = await api.get("/contests/joined", { params });
-        // Aapka backend data ko { contests: data, meta: ... } mein wrap kar raha hai
+        
         return response.data; 
     } catch (error) {
         throw error.response?.data || error.message;
