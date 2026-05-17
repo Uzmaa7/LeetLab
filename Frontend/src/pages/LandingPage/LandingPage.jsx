@@ -9,7 +9,7 @@ import {FourthPage} from "../index.jsx"
 import {SixthPage} from "../index.jsx"
 // import SeventhPage from "../index.jsx"
 import { LeetButton } from '../../components/index.jsx';
-import { Rocket, Trophy } from 'lucide-react'; // Icons for buttons
+import { Rocket, Trophy } from 'lucide-react'; 
 
 
 
@@ -18,7 +18,7 @@ const LandingPage = () => {
         <div className="w-full bg-black overflow-x-hidden">
             
             {/* --- SECTION 1: HERO/LANDING --- */}
-            {/* Responsive Height: Mobile pe content ke hisaab se, desktop pe 100vh */}
+          
             <div className="relative w-full min-h-screen md:h-screen overflow-hidden flex flex-col">
                 <Navbar />
 
@@ -52,26 +52,26 @@ const LandingPage = () => {
                                 <span className="text-[11px] font-bold text-emerald-300  tracking-wider">v1.0 is Live</span>
                              </div>
 
-                        {/* Responsive Heading: 4xl mobile, 6xl+ desktop */}
+                        {/*Heading */}
                         <h1 className="text-4xl sm:text-6xl md:text-7xl font-black leading-[1.1] mb-6 mt-6 tracking-tighter">
                             <span className="bg-gradient-to-r from-white via-white/80 to-orange-500 bg-clip-text text-transparent inline-block">
                                 Make Logic Permanent
                             </span>
                         </h1>
 
-                        {/* Responsive Sub-text: text-sm mobile, text-lg desktop */}
+                        {/*Sub-text: */}
                         <p className="text-sm md:text-lg text-zinc-400 max-w-xl mb-10 leading-relaxed">
                             From real-time lobbies to collaborative peer learning—we've built a system where you don't just solve problems, you <span className="text-white">discuss and retain</span> them with a community.
                         </p>
 
-                        {/* 2. Action Buttons Container (Theme Buttons Integrated) */}
-                        {/* 1. Responsive: Mobile pe stack (flex-col), tablet+ pe horizontal (flex-row) */}
+                        {/* 2. Action Buttons Container */}
+                      
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
                             <LeetButton 
                                 text="Get Started Free" 
                                 icon={Rocket} 
                                 className="w-full sm:w-auto px-10 py-4"
-                                onClick={() => {}} // Navigation logic intact in Navbar/Auth
+                                onClick={() => {}} 
                             />
                             
                             <LeetButton 
