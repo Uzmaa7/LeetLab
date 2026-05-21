@@ -3,99 +3,412 @@ import mongoose, { isValidObjectId } from 'mongoose'
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
 import { createContestService } from "../services/contest.service.js";
-import { createContestParticipantService } from "../services/contestParticipant.services.js";
+import { createContestParticipantService } from "../services/contestParticipant.service.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
 import Contest from "../models/contest.model.js";
 import { ContestParticipant } from "../models/contestParticipants.model.js";
 
 
 
+// TODO: wrap createContest in mongoose session when more side effects added
 const createContest = asyncHandler(async (req, res) => {
-    // collectionId is now optional, added directQuestions and externalQuestions
-    const { 
-        title, 
-        durationInMin, 
-        visibility, 
-        collectionId, 
-        questionCount, 
-        directQuestionIds, // Array of platform Question ObjectIds
-        externalQuestions  // Array of {url, title, platform}
-    } = req.body;
+    console.log("Request to create contest with body:", req.body);
+    const { collectionId, title, durationInMin, visibility, questionCount } = req.body;
 
+    const qCount = Number(questionCount);
     const duration = Number(durationInMin);
-    if (Number.isNaN(duration) || duration <= 0) {
-        throw new ApiError(400, "Valid duration is required");
+
+    if (Number.isNaN(qCount) || Number.isNaN(duration)) {
+        throw new ApiError(400, "Invalid numeric values");
     }
 
-    let finalQuestions = [];
-
-    // SCENARIO 1: Questions from a Collection (Randomly picked)
-    if (collectionId) {
-        if (!isValidObjectId(collectionId)) throw new ApiError(400, "Invalid collection ID");
-
-        const qCount = Number(questionCount) || 0;
-        
-        const collection = await Collection.findOne({ _id: collectionId, createdBy: req.user._id });
-        if (!collection) throw new ApiError(404, "Collection not found");
-
-        const pickedIds = await collection.getRandomQuestionIds(qCount);
-        pickedIds.forEach(id => {
-            finalQuestions.push({ questionId: id, isExternal: false });
-        });
+    if(!isValidObjectId(collectionId)){
+        throw new ApiError(400, "Invalid collection ID");
     }
 
-    // SCENARIO 2: Questions selected directly from platform
-    if (directQuestionIds && Array.isArray(directQuestionIds)) {
-        directQuestionIds.forEach(id => {
-            if (isValidObjectId(id)) {
-                finalQuestions.push({ questionId: id, isExternal: false });
-            }
-        });
+    if (!qCount || qCount <= 0) {
+        throw new ApiError(400, "questionCount must be greater than 0");
     }
 
-    // SCENARIO 3: External Links pasted by user
-    if (externalQuestions && Array.isArray(externalQuestions)) {
-        externalQuestions.forEach(q => {
-            finalQuestions.push({
-                isExternal: true,
-                externalUrl: q.url,
-                externalTitle: q.title || "External Problem",
-                externalPlatform: q.platform || "other"
-            });
-        });
+    if(duration <= 0){
+        throw new ApiError(400, "Duration must be greater than 0");
     }
 
-    if (finalQuestions.length === 0) {
-        throw new ApiError(400, "At least one question is required to create a contest");
+    const collection = await Collection.findOne(
+        {
+            _id : new mongoose.Types.ObjectId(collectionId),
+            createdBy : req.user._id
+        }
+    )
+
+console.log("Fetched collection for contest creation:", collection);
+
+    if (!collection) throw new ApiError(404, "Collection not found");
+
+    let questionIds;
+    try {
+        questionIds = await collection.getRandomQuestionIds(qCount);
+        console.log("Random question IDs fetched for contest:", questionIds);
+    } catch (err) {
+        throw new ApiError(400, "Not enough questions in collection");
     }
 
-    // Create the Contest
-    const contest = await createContestService({
-        title,
-        owner: req.user._id,
-        questions: finalQuestions, // Use the new hybrid array
-        durationInMin: duration,
-        visibility
-    });
 
-    // Create the Participant Entry (Host)
-    // We initialize questionsStatus so the UI knows what needs to be solved
-    const initialQuestionsStatus = finalQuestions.map(q => ({
-        questionIdOrUrl: q.isExternal ? q.externalUrl : q.questionId.toString(),
-        isSolved: false
-    }));
-
+    const contest = await createContestService(
+        {
+            title,
+            owner : req.user._id,
+            questionIds,
+            durationInMin : duration,
+            visibility
+        }
+    )
+    // host is the first participant 
     await createContestParticipantService({
         contestId: contest._id,
         userId: req.user._id,
-        joinedAt: new Date(),
-        questionsStatus: initialQuestionsStatus
+        joinedAt: new Date()
     });
 
-    return res.status(201).json(
-        new ApiResponse(201, contest ,"Contest created successfully")
+    return res
+        .status(201)
+        .json(
+            new ApiResponse(201, contest, "Contest created")
+        )
+
+})
+
+// (host starts contest globally)
+const startContest = asyncHandler(async (req, res) => {
+    const { contestId } = req.params;
+
+    if (!isValidObjectId(contestId)) {
+        throw new ApiError(400, "Invalid contest ID");
+    }
+
+    const contest = await Contest.findById(contestId);
+
+    if (!contest) throw new ApiError(404, "Contest not found");
+
+    // Only host can start
+    if (contest.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "Only host can start contest");
+    }
+
+    if (contest.status !== "upcoming") {
+        throw new ApiError(400, "Contest already started");
+    }
+
+    contest.startsAt = new Date();
+    contest.endsAt = new Date(
+        contest.startsAt.getTime() + contest.durationInMin * 60 * 1000
+    );
+
+    contest.status = "live";
+
+    await contest.save();
+
+    // io.to(`contest:${contest._id}:lobby`).emit("contest:started", {
+    //     contestId: contest._id
+    // });
+    // Fetch all participants for this contest
+    const participants = await ContestParticipant.find({ contestId: contest._id })
+        .select("userId")
+        .lean();
+
+    // Notify all participants (excluding the host)
+    // if (participants && participants.length > 0) {
+    //     // Filter out the host and map to notification promises
+    //     const notificationPromises = participants
+    //         .map(p => p.userId.toString())
+    //         .filter(participantId => participantId !== req.user._id.toString())
+    //         .map(participantId => 
+    //             sendNotification({
+    //                 recipientId: participantId,
+    //                 senderId: req.user._id,
+    //                 type: "contest_start",
+    //                 title: "Contest Started! 🚀",
+    //                 message: "The contest is now live. Join the arena and good luck!",
+    //                 entityType: "Contest",
+    //                 entityId: contest._id
+    //             }).catch(err => console.error("Notification Error:", err))
+    //         );
+
+    //     // Execute all notifications concurrently (fire and forget)
+    //     if (notificationPromises.length > 0) {
+    //         Promise.all(notificationPromises);
+    //     }
+    // }
+    //  console.log("here i am ", contest)
+    return res.status(200).json(
+       
+        new ApiResponse(200, contest, "Contest started")
     );
 });
+
+
+const getContestLeaderboard = asyncHandler(async (req, res) => {
+    const { contestId } = req.params;
+    const userId = req.user._id;
+
+    if (!isValidObjectId(contestId)) {
+        throw new ApiError(400, "Invalid contest ID");
+    }
+
+    // ---------------- CONTEST ----------------
+    const contest = await Contest.findById(contestId)
+  .select(
+    "title visibility owner durationInMin status contestCode questionIds"
+  )
+  .populate({
+    path: "questionIds",
+    select: "title difficulty", // only what you want
+  })
+  .lean();
+
+
+    if (!contest) {
+        throw new ApiError(404, "Contest not found");
+    }
+
+    // ---------------- AUTH ----------------
+    if (
+        contest.visibility === "private" &&
+        contest.owner.toString() !== userId.toString()
+    ) {
+        throw new ApiError(403, "This contest is private");
+    }
+
+    const contestObjectId = new mongoose.Types.ObjectId(contestId);
+
+    // ---------------- LEADERBOARD ----------------
+    const leaderboard = await ContestParticipant.aggregate([
+        {
+            $match: {
+                contestId: contestObjectId,
+                submissionStatus: "submitted",
+            },
+        },
+
+        // ---- Join users ----
+        {
+            $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "user",
+            },
+        },
+        { $unwind: "$user" },
+
+        // ---- Join attempts (OPTIMIZED) ----
+        {
+            $lookup: {
+                from: "questionattempts",
+                let: { uid: "$userId" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$contestId", contestObjectId] },
+                                    { $eq: ["$userId", "$$uid"] },
+                                ],
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            questionId: 1,
+                            status: 1,
+                            timeSpent: 1,
+                        },
+                    },
+                ],
+                as: "attempts",
+            },
+        },
+
+        // ---- Derived fields ----
+        {
+            $addFields: {
+                totalTimeSpent: {
+                    $cond: [
+                        { $gt: [{ $size: "$attempts" }, 0] },
+                        { $sum: "$attempts.timeSpent" },
+                        0,
+                    ],
+                },
+            },
+        },
+
+        // ---- Sort leaderboard ----
+        {
+            $sort: {
+                score: -1,
+                totalTimeSpent: 1,
+            },
+        },
+
+        // ---- Final shape ----
+        {
+            $project: {
+                _id: 0,
+                userId: "$user._id",
+                score: 1,
+                solvedCount: 1,
+                totalTimeSpent: 1,
+                attempts: 1,
+                user: {
+                    fullName: "$user.fullName",
+                    username: "$user.username",
+                    avatar: "$user.avatar",
+                },
+            },
+        },
+    ]);
+
+    // ---------------- PARTICIPATION CHECK ----------------
+    const myIndex = leaderboard.findIndex(
+        p => String(p.userId) === String(userId)
+    );
+
+    if (myIndex === -1) {
+        throw new ApiError(403, "You did not participate in this contest");
+    }
+
+    const myResult = {
+        rank: myIndex + 1,
+        ...leaderboard[myIndex],
+    };
+
+    // ---------------- PRIVATE CONTEST ----------------
+    if (contest.visibility === "private") {
+        return res.status(200).json(
+            new ApiResponse(200, "Result fetched", {
+                type: "private",
+                contest,
+                myResult,
+            })
+        );
+    }
+
+    // ---------------- GROUP CONTEST ----------------
+    const rankedLeaderboard = leaderboard.map((p, idx) => ({
+        rank: idx + 1,
+        ...p,
+    }));
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            type: "group",
+            contest,
+            leaderboard: rankedLeaderboard,
+            myResult,
+        }, "Result fetched")
+    );
+});
+
+const getContestById = asyncHandler(async (req, res) => {
+
+    const {contestId} = req.params;
+
+    const match = isValidObjectId(contestId) ? {_id : new mongoose.Types.ObjectId(contestId)} : {contestCode: contestId}
+
+    const contestMeta = await Contest.findOne(match).select("visibility owner");
+
+    if (!contestMeta) {
+        throw new ApiError(404, "Contest not found");
+    }
+
+    if (
+        contestMeta.visibility === "private" &&
+        contestMeta.owner.toString() !== req.user._id.toString()
+    ) {
+        throw new ApiError(403, "This contest is private");
+    }
+
+
+    const contest = await Contest.aggregate(
+        [
+            {
+                $match : match
+            },
+            {
+                $lookup : {
+                    from : 'users',
+                    localField : 'owner',
+                    foreignField : '_id',
+                    as : 'owner'
+                }
+            },
+            {
+                $unwind : '$owner'
+            },
+            {
+                $lookup : {
+                    from : 'questions',
+                    localField : 'questionIds',
+                    foreignField : '_id',
+                    as: "questions"
+                }
+            },
+            {
+                $project : {
+                    _id: 1,
+                    contestCode: 1,
+                    title: 1,
+                    durationInMin: 1,
+                    status: 1,
+                    visibility: 1,
+                    startsAt: 1,
+                    endsAt: 1,
+                    
+
+                    "owner.fullName": 1,
+                    "owner.username": 1,
+                    "owner.avatar": 1,
+                    "owner._id" : 1,
+                    
+                    "questions._id": 1,
+                    "questions.title": 1,
+                    "questions.difficulty": 1,
+                    "questions.platform": 1,
+                    "questions.questionUrlOriginal" : 1
+                }
+            }
+        ]
+    )
+
+    if (!contest.length) {
+        throw new ApiError(404, "Contest not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, contest[0], "Contest fetched")
+    );
+
+ /*   What getContest does
+
+    It answers:
+        “Show me this contest’s page”
+
+    It returns:
+        Contest info
+        Owner (who hosted it)
+        Questions inside it
+
+    This is used for:
+
+        Join screen
+        Contest page
+        Sharing by code
+        Spectator view
+        Leaderboard page
+*/
+
+})
 
 const getCreatedContests = asyncHandler(async (req, res) => {
     const { page, limit } = req.query;
@@ -127,7 +440,9 @@ const getCreatedContests = asyncHandler(async (req, res) => {
 });
 
 const getJoinedContests = asyncHandler(async (req, res) => {
-    const { page, limit } = req.query;
+   const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
      const p = Math.max(1, Number(page));
     const l = Math.min(50, Number(limit));
  
@@ -291,4 +606,12 @@ const getActiveContests = asyncHandler(async (req, res) => {
 
 
 
-export {createContest, getCreatedContests, getJoinedContests, getAllContests, getActiveContests};
+export {createContest,
+     getCreatedContests,
+     getJoinedContests, 
+     getAllContests,
+      getActiveContests,
+      getContestById,
+      startContest,
+      getContestLeaderboard
+    };
