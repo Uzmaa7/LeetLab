@@ -4,7 +4,8 @@
   "description": "",
   "main": "service.js",
   "scripts": {
-    "dev": "nodemon service.js"
+    "dev": "nodemon service.js",
+    "start": "node service.js"
   },
   "keywords": [],
   "author": "",
